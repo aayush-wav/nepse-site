@@ -3,6 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, ChevronDown, Check, X, Play, RotateCcw, Save } from 'lucide-react';
 import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
+import { formatNPR, formatPercent, getPriceColorClass, formatNepaliNumber } from '../utils';
+
+interface FilterState {
+  sector: string[];
+  minPrice: string;
+  maxPrice: string;
+  minChange: string;
+  maxChange: string;
+  minPE: string;
+  maxPE: string;
+  minEPS: string;
+  minDividend: string;
+}
 
 const initialFilters: FilterState = {
   sector: [],
@@ -21,13 +34,17 @@ export default function Screener() {
   const { data: rawData, isLoading: loadingLive } = useLiveTrading();
   const { data: companies, isLoading: loadingCompanies } = useCompanyList();
   
+  const sectorMap = useMemo(() => {
+    const map = new Map();
+    if (companies) {
+      companies.forEach((c: any) => map.set(c.symbol, c.sectorName));
+    }
+    return map;
+  }, [companies]);
+
   const stocks = useMemo(() => {
     if (!rawData) return [];
     
-    const companyData = companies || [];
-    const sectorMap = new Map();
-    companyData.forEach((c: any) => sectorMap.set(c.symbol, c.sectorName));
-
     return rawData.map((s: any) => {
       const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || 'Others';
       
@@ -48,7 +65,7 @@ export default function Screener() {
         dividendYield: s.dividendYield || 0,
       };
     });
-  }, [rawData, companies]);
+  }, [rawData, sectorMap]);
 
   const sectors = useMemo(() => {
     const s = new Set(stocks.map(st => st.sector).filter(Boolean));
@@ -248,58 +265,65 @@ export default function Screener() {
         </div>
 
         <div className="card flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-auto scrollbar-thin">
-            <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-10 bg-bg-surface">
-                <tr>
-                  <th className="table-header w-12">#</th>
-                  <th className="table-header">Symbol</th>
-                  <th className="table-header">LTP</th>
-                  <th className="table-header">Change %</th>
-                  <th className="table-header">P/E</th>
-                  <th className="table-header">EPS</th>
-                  <th className="table-header">P/B</th>
-                  <th className="table-header">Dividend</th>
-                  <th className="table-header text-right">Market Cap</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredResults.map((s, i) => (
-                  <tr 
-                    key={s.symbol}
-                    onClick={() => navigate(`/stock/${s.symbol}`)}
-                    className="border-b border-bg-border/30 hover:bg-bg-elevated/50 cursor-pointer transition-colors table-row-zebra"
-                  >
-                    <td className="table-cell text-text-muted font-jetbrains text-xs">{i + 1}</td>
-                    <td className="table-cell">
-                      <div className="font-bold text-text-primary">{s.symbol}</div>
-                      <div className="text-[10px] text-text-muted truncate max-w-[150px]">{s.sector}</div>
-                    </td>
-                    <td className="table-cell font-jetbrains">{formatNepaliNumber(s.ltp)}</td>
-                    <td className={`table-cell font-jetbrains font-bold ${getPriceColorClass(s.changePercent)}`}>
-                      {formatPercent(s.changePercent)}
-                    </td>
-                    <td className="table-cell font-jetbrains text-text-secondary">{s.peRatio || '—'}</td>
-                    <td className="table-cell font-jetbrains text-text-secondary">{s.eps || '—'}</td>
-                    <td className="table-cell font-jetbrains text-text-secondary">{s.pbRatio || '—'}</td>
-                    <td className="table-cell font-jetbrains text-text-secondary">{s.dividendYield ? `${s.dividendYield}%` : '—'}</td>
-                    <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNPR(s.marketCap || 0, true)}</td>
-                  </tr>
-                ))}
-                {filteredResults.length === 0 && (
+          {loadingLive || loadingCompanies ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted">
+              <div className="w-12 h-12 rounded-full border-4 border-bg-border border-t-brand-cyan animate-spin" />
+              <p className="font-medium animate-pulse">Syncing market data...</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto scrollbar-thin">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 z-10 bg-bg-surface">
                   <tr>
-                    <td colSpan={9} className="p-20 text-center text-text-muted">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search size={40} className="opacity-20" />
-                        <p>No companies match your filters</p>
-                        <button onClick={resetFilters} className="text-brand-cyan hover:underline text-xs mt-2">Clear all filters</button>
-                      </div>
-                    </td>
+                    <th className="table-header w-12">#</th>
+                    <th className="table-header">Symbol</th>
+                    <th className="table-header">LTP</th>
+                    <th className="table-header">Change %</th>
+                    <th className="table-header">P/E</th>
+                    <th className="table-header">EPS</th>
+                    <th className="table-header">P/B</th>
+                    <th className="table-header">Dividend</th>
+                    <th className="table-header text-right">Market Cap</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredResults.map((s, i) => (
+                    <tr 
+                      key={s.symbol}
+                      onClick={() => navigate(`/stock/${s.symbol}`)}
+                      className="border-b border-bg-border/30 hover:bg-bg-elevated/50 cursor-pointer transition-colors table-row-zebra"
+                    >
+                      <td className="table-cell text-text-muted font-jetbrains text-xs">{i + 1}</td>
+                      <td className="table-cell">
+                        <div className="font-bold text-text-primary">{s.symbol}</div>
+                        <div className="text-[10px] text-text-muted truncate max-w-[150px]">{s.sector}</div>
+                      </td>
+                      <td className="table-cell font-jetbrains">{formatNepaliNumber(s.ltp)}</td>
+                      <td className={`table-cell font-jetbrains font-bold ${getPriceColorClass(s.changePercent)}`}>
+                        {formatPercent(s.changePercent)}
+                      </td>
+                      <td className="table-cell font-jetbrains text-text-secondary">{s.peRatio || '—'}</td>
+                      <td className="table-cell font-jetbrains text-text-secondary">{s.eps || '—'}</td>
+                      <td className="table-cell font-jetbrains text-text-secondary">{s.pbRatio || '—'}</td>
+                      <td className="table-cell font-jetbrains text-text-secondary">{s.dividendYield ? `${s.dividendYield}%` : '—'}</td>
+                      <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNPR(s.marketCap || 0, true)}</td>
+                    </tr>
+                  ))}
+                  {filteredResults.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="p-20 text-center text-text-muted">
+                        <div className="flex flex-col items-center gap-2">
+                          <Search size={40} className="opacity-20" />
+                          <p>No companies match your filters</p>
+                          <button onClick={resetFilters} className="text-brand-cyan hover:underline text-xs mt-2">Clear all filters</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
     </div>

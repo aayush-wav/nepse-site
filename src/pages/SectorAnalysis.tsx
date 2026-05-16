@@ -49,6 +49,9 @@ export default function SectorAnalysis() {
       };
       
       const mapped = mapping[i] || [i];
+      return mapped.includes(s) || s.includes(i) || i.includes(s);
+    };
+
     return rawSectors.map((sector: any) => {
       const name = sector.index || sector.name;
       const sectorStocks = stocks.filter((s: any) => {
@@ -91,7 +94,7 @@ export default function SectorAnalysis() {
         if (pe > 0) { totalPE += pe; countWithPE++; }
         if (eps > 0) { totalEPS += eps; countWithEPS++; }
 
-        const currentTopGainerChange = topGainer ? parseNum(topGainer.percentageChange) : -9999;
+        const currentTopGainerChange = topGainer ? parseNum((topGainer as any).percentageChange) : -9999;
         if (!topGainer || pChange > currentTopGainerChange) {
           topGainer = s;
         }
@@ -113,9 +116,9 @@ export default function SectorAnalysis() {
         avgPE: countWithPE > 0 ? (totalPE / countWithPE).toFixed(2) : '—',
         avgEPS: countWithEPS > 0 ? (totalEPS / countWithEPS).toFixed(2) : '—',
         topGainer: topGainer ? {
-          symbol: topGainer.symbol,
-          changePercent: parseNum(topGainer.percentageChange),
-          ltp: parseNum(topGainer.lastTradedPrice || topGainer.ltp)
+          symbol: (topGainer as any).symbol,
+          changePercent: parseNum((topGainer as any).percentageChange),
+          ltp: parseNum((topGainer as any).lastTradedPrice || (topGainer as any).ltp)
         } : null,
       };
     }).sort((a: any, b: any) => b.changePercent - a.changePercent);
