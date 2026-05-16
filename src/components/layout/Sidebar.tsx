@@ -53,7 +53,7 @@ export default function Sidebar() {
         flex flex-col transition-transform lg:transition-all duration-300
         ${sidebarOpen ? 'translate-x-0 w-60 shadow-2xl lg:shadow-none' : '-translate-x-full lg:translate-x-0 w-60 lg:w-[68px]'}`}
     >
-      {/* Logo */}
+
       <div className="flex items-center gap-3 px-4 h-16 border-b border-bg-border shrink-0">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-cyan to-brand-violet flex items-center justify-center shadow-glow-cyan/20">
           <TrendingUp size={18} className="text-white" />
@@ -66,7 +66,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Nav Groups */}
+
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
         {navGroups.map((group) => (
           <div key={group.label}>
@@ -108,7 +108,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Settings (pinned bottom) */}
+
       <div className="border-t border-bg-border px-2 py-2">
         <NavLink
           to="/settings"
@@ -127,7 +127,7 @@ export default function Sidebar() {
         </NavLink>
       </div>
 
-      {/* Collapse Toggle */}
+
       <button
         onClick={toggleSidebar}
         className="flex items-center justify-center h-10 border-t border-bg-border text-text-muted hover:text-text-primary hover:bg-bg-elevated/50 transition-all"

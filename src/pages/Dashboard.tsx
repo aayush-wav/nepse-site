@@ -15,7 +15,7 @@ const fadeUp = {
 };
 const stagger = { visible: { transition: { staggerChildren: 0.07 } } };
 
-/* ── Market Mood Gauge ─────────────────────────── */
+
 function MarketMood({ advancing, declining, indexChange }: { advancing: number; declining: number; indexChange: number }) {
   const hasBreadth = advancing > 0 || declining > 0;
   
@@ -26,7 +26,6 @@ function MarketMood({ advancing, declining, indexChange }: { advancing: number; 
     const raw = ratio * 0.7 + (indexChange > 0 ? 0.15 : indexChange < 0 ? -0.15 : 0) + 0.15;
     score = Math.max(0, Math.min(1, raw));
   } else {
-    // Purely index based fallback
     score = indexChange > 1 ? 0.8 : indexChange > 0 ? 0.6 : indexChange < -1 ? 0.2 : indexChange < 0 ? 0.4 : 0.5;
   }
 
@@ -66,7 +65,7 @@ function MarketMood({ advancing, declining, indexChange }: { advancing: number; 
   );
 }
 
-/* ── Skeleton Loader ───────────────────────────── */
+
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -81,7 +80,7 @@ function DashboardSkeleton() {
   );
 }
 
-/* ── Mover Card ────────────────────────────────── */
+
 function MoverCard({ stock, rank, type, onClick }: { stock: any; rank: number; type: 'gainer' | 'loser' | 'volume' | 'turnover'; onClick: () => void }) {
   const borderColor = type === 'gainer' ? 'border-l-bull-green' : type === 'loser' ? 'border-l-bear-red' : type === 'turnover' ? 'border-l-brand-gold' : 'border-l-brand-cyan';
   const rankColors = ['bg-brand-gold text-bg-base', 'bg-text-secondary text-bg-base', 'bg-brand-violet/60 text-white'];
@@ -121,7 +120,7 @@ function MoverCard({ stock, rank, type, onClick }: { stock: any; rank: number; t
   );
 }
 
-/* ── Event Type Config ─────────────────────────── */
+
 const eventStyles: Record<string, string> = {
   ipo: 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan',
   agm: 'border-brand-violet bg-brand-violet/10 text-brand-violet',
@@ -131,7 +130,7 @@ const eventStyles: Record<string, string> = {
   rights: 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan',
 };
 
-/* ── Main Dashboard ────────────────────────────── */
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useDashboard();
@@ -159,7 +158,7 @@ export default function Dashboard() {
     const leadingSector = sectors[0];
     const events = apiEvents || seedEvents;
 
-    // Smart insights
+
     const insights: { emoji: string; text: string; color: string }[] = [];
     const hasBreadth = advancing > 0 || declining > 0;
     
@@ -196,14 +195,11 @@ export default function Dashboard() {
   return (
     <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
 
-      {/* ═══ HERO CARD ═══ */}
       <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-bg-surface via-bg-surface to-bg-elevated border border-bg-border/80 p-6 lg:p-8">
-        {/* Ambient glows */}
         <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-cyan/[0.04] rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-brand-violet/[0.04] rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-center">
-          {/* NEPSE Index */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse" />
@@ -230,12 +226,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Market Mood */}
+
           <div className="flex justify-center">
             <MarketMood advancing={advancing} declining={declining} indexChange={nepseIdx.perChange || 0} />
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Turnover', value: formatNPR(turnover, true), icon: Banknote, color: 'text-brand-gold' },
@@ -255,7 +250,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* ═══ SMART INSIGHTS ═══ */}
+
       <motion.div variants={fadeUp} className="flex flex-wrap gap-2">
         <div className="flex items-center gap-1.5 mr-1">
           <Sparkles size={14} className="text-brand-gold" />
@@ -276,9 +271,8 @@ export default function Dashboard() {
         ))}
       </motion.div>
 
-      {/* ═══ MARKET MOVERS ═══ */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Gainers */}
         <motion.div variants={fadeUp} className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-syne text-base font-bold flex items-center gap-2">
@@ -296,7 +290,6 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* Losers */}
         <motion.div variants={fadeUp} className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-syne text-base font-bold flex items-center gap-2">
@@ -314,7 +307,6 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* Most Active */}
         <motion.div variants={fadeUp} className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-syne text-base font-bold flex items-center gap-2">
@@ -332,7 +324,6 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* Highest Turnover */}
         <motion.div variants={fadeUp} className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-syne text-base font-bold flex items-center gap-2">
@@ -351,7 +342,6 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ═══ SECTOR HEATMAP ═══ */}
       <motion.div variants={fadeUp} className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-syne text-base font-bold flex items-center gap-2">
@@ -408,9 +398,8 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* ═══ STATS + EVENTS ═══ */}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Quick Actions */}
         <motion.div variants={fadeUp} className="lg:col-span-2 card p-5">
           <h2 className="font-syne text-base font-bold mb-4 flex items-center gap-2">
             <Eye size={16} className="text-brand-violet" /> Quick Actions
@@ -438,7 +427,6 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Upcoming Events */}
         <motion.div variants={fadeUp} className="lg:col-span-3 card p-5">
           <h2 className="font-syne text-base font-bold mb-4 flex items-center gap-2">
             <Calendar size={16} className="text-brand-gold" /> Upcoming Events
