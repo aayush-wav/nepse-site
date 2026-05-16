@@ -1,48 +1,7 @@
 import { Bell, TrendingUp, TrendingDown, Info, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const recentNotifications = [
-  {
-    id: '1',
-    type: 'market',
-    title: 'NEPSE Index crossed 2800',
-    description: 'Market shows strong bullish momentum as indices hit new monthly highs.',
-    time: '5m ago',
-    icon: TrendingUp,
-    color: 'text-bull-green',
-    bg: 'bg-bull-green/10'
-  },
-  {
-    id: '2',
-    type: 'alert',
-    title: 'Price Alert: NABIL',
-    description: 'NABIL has reached your target price of Rs. 1,250.',
-    time: '25m ago',
-    icon: Bell,
-    color: 'text-brand-cyan',
-    bg: 'bg-brand-cyan/10'
-  },
-  {
-    id: '3',
-    type: 'info',
-    title: 'New IPO Announced',
-    description: 'Aman Nepal Hydropower is opening IPO from tomorrow.',
-    time: '1h ago',
-    icon: Info,
-    color: 'text-brand-violet',
-    bg: 'bg-brand-violet/10'
-  },
-  {
-    id: '4',
-    type: 'market',
-    title: 'Market Closed',
-    description: 'Market closed at 2785.42 with a turnover of 4.52 Arba.',
-    time: '3h ago',
-    icon: Clock,
-    color: 'text-text-muted',
-    bg: 'bg-bg-elevated'
-  }
-];
+const recentNotifications: any[] = [];
 
 interface NotificationDropdownProps {
   onClose: () => void;
@@ -59,30 +18,38 @@ export default function NotificationDropdown({ onClose }: NotificationDropdownPr
       </div>
       
       <div className="max-h-[400px] overflow-y-auto">
-        {recentNotifications.map((notif) => {
-          const Icon = notif.icon;
-          return (
-            <div 
-              key={notif.id} 
-              className="p-4 border-b border-bg-border/50 hover:bg-bg-elevated/50 transition-colors cursor-pointer group"
-            >
-              <div className="flex gap-3">
-                <div className={`w-8 h-8 rounded-lg ${notif.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                  <Icon size={16} className={notif.color} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-0.5">
-                    <p className="text-[13px] font-semibold text-text-primary truncate">{notif.title}</p>
-                    <span className="text-[10px] text-text-muted whitespace-nowrap ml-2">{notif.time}</span>
+        {recentNotifications.length > 0 ? (
+          recentNotifications.map((notif) => {
+            const Icon = notif.icon;
+            return (
+              <div 
+                key={notif.id} 
+                className="p-4 border-b border-bg-border/50 hover:bg-bg-elevated/50 transition-colors cursor-pointer group"
+              >
+                <div className="flex gap-3">
+                  <div className={`w-8 h-8 rounded-lg ${notif.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                    <Icon size={16} className={notif.color} />
                   </div>
-                  <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
-                    {notif.description}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-0.5">
+                      <p className="text-[13px] font-semibold text-text-primary truncate">{notif.title}</p>
+                      <span className="text-[10px] text-text-muted whitespace-nowrap ml-2">{notif.time}</span>
+                    </div>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
+                      {notif.description}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="p-12 text-center">
+            <Bell size={32} className="mx-auto text-bg-border mb-3" />
+            <p className="text-sm text-text-muted font-medium">No new notifications</p>
+            <p className="text-[10px] text-text-muted/60 mt-1">We'll notify you about market movements</p>
+          </div>
+        )}
       </div>
       
       <Link 

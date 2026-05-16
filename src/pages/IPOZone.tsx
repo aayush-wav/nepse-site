@@ -3,14 +3,7 @@ import { motion } from 'framer-motion';
 import { Rocket, Calendar, CheckCircle2, Clock, ExternalLink, Filter, Search, Info } from 'lucide-react';
 import { formatNepaliNumber } from '../utils';
 
-const ipoData = [
-  { id: '1', company: 'Terhathum Power Company Ltd.', symbol: 'TPC', sector: 'Hydropower', type: 'IPO', price: 100, units: 800000, openDate: '2082-02-05', closeDate: '2082-02-09', status: 'open', banker: 'NIBL Ace Capital', rating: 'CARE-NP BB' },
-  { id: '2', company: 'Himalayan Hydropower Ltd.', symbol: 'HHL', sector: 'Hydropower', type: 'FPO', price: 100, units: 1200000, openDate: '2082-03-05', closeDate: '2082-03-09', status: 'upcoming', banker: 'Global IME Capital', rating: 'ICRA-NP BBB' },
-  { id: '3', company: 'Dish Media Network Ltd.', symbol: 'DISH', sector: 'Others', type: 'IPO', price: 100, units: 2300000, openDate: '2082-04-10', closeDate: '2082-04-14', status: 'upcoming', banker: 'Prabhu Capital', rating: 'CARE-NP BBB-' },
-  { id: '4', company: 'Nepal Republic Media Ltd.', symbol: 'NRM', sector: 'Others', type: 'IPO', price: 100, units: 3500000, openDate: '2082-01-15', closeDate: '2082-01-19', status: 'closed', banker: 'Mega Capital', allotmentDate: '2082-01-25', oversubscribed: '14.5x' },
-  { id: '5', company: 'Upper Tamakoshi Hydropower', symbol: 'UPPER', sector: 'Hydropower', type: 'RIGHT', price: 100, units: 10000000, openDate: '2082-01-01', closeDate: '2082-01-30', status: 'closed', banker: 'Sunrise Capital', oversubscribed: '1.2x' },
-  { id: '6', company: 'Nabil Balanced Fund-3', symbol: 'NBF3', sector: 'Mutual Fund', type: 'IPO', price: 10, units: 100000000, openDate: '2082-02-15', closeDate: '2082-02-20', status: 'upcoming', banker: 'Nabil Investment' },
-];
+const ipoData: any[] = [];
 
 export default function IPOZone() {
   const [filter, setFilter] = useState<'all' | 'open' | 'upcoming' | 'closed'>('all');

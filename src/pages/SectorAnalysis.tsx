@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { PieChart, TrendingUp, TrendingDown, Activity, Banknote, ListFilter, ArrowRight } from 'lucide-react';
 import { formatNPR, formatPercent, getPriceColorClass, formatVolume } from '../utils';
 import { useSectorIndices, useLiveTrading, useCompanyList } from '../hooks/useNepseData';
-import { seedCompanies } from '../data/seed';
+
 
 export default function SectorAnalysis() {
   const navigate = useNavigate();
@@ -49,13 +49,6 @@ export default function SectorAnalysis() {
       };
       
       const mapped = mapping[i] || [i];
-      return mapped.includes(s) || s.includes(i) || i.includes(s);
-    };
-
-    // Pre-map seed fundamentals
-    const seedMap = new Map();
-    seedCompanies.forEach(c => seedMap.set(c.symbol, c));
-
     return rawSectors.map((sector: any) => {
       const name = sector.index || sector.name;
       const sectorStocks = stocks.filter((s: any) => {
@@ -89,14 +82,12 @@ export default function SectorAnalysis() {
         else if (pChange < 0) stocksDown++;
         else stocksUnchanged++;
 
-        const seedFallback = seedMap.get(s.symbol) || {};
-
-        sectorMarketCap += parseNum(s.marketCap || s.marketCapitalization || seedFallback.marketCap);
+        sectorMarketCap += parseNum(s.marketCap || s.marketCapitalization || 0);
         turnover += parseNum(s.totalTradeValue || s.turnover);
         volume += parseNum(s.totalTradeQuantity || s.volume);
         
-        const pe = parseNum(s.peRatio || seedFallback.peRatio);
-        const eps = parseNum(s.eps || seedFallback.eps);
+        const pe = parseNum(s.peRatio);
+        const eps = parseNum(s.eps);
         if (pe > 0) { totalPE += pe; countWithPE++; }
         if (eps > 0) { totalEPS += eps; countWithEPS++; }
 

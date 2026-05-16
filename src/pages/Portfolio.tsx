@@ -20,12 +20,7 @@ export default function Portfolio() {
     let totalValue = 0;
     
     // Mock prices for calculation
-    const mockPrices: Record<string, number> = {
-      'NABIL': 1285,
-      'NICA': 848,
-      'NHPC': 598,
-      'UPPER': 365,
-    };
+    const mockPrices: Record<string, number> = {};
 
     activePortfolio.holdings.forEach(h => {
       const currentPrice = mockPrices[h.symbol] || h.avgPurchasePrice;
@@ -94,15 +89,15 @@ export default function Portfolio() {
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
             <Banknote size={12} className="text-brand-gold" /> Daily Change
           </div>
-          <div className="font-jetbrains text-2xl font-bold text-bull-green">+Rs. 12,450</div>
-          <div className="text-xs text-bull-green font-bold mt-1">↑ 1.25%</div>
+          <div className="font-jetbrains text-2xl font-bold text-bull-green">+Rs. 0</div>
+          <div className="text-xs text-bull-green font-bold mt-1">↑ 0.00%</div>
         </div>
         <div className="card p-5 border-l-4 border-brand-violet">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
             <PieChart size={12} className="text-brand-violet" /> Cash Balance
           </div>
-          <div className="font-jetbrains text-2xl font-bold text-text-primary">Rs. 45,000</div>
-          <div className="text-[10px] text-text-secondary mt-1">4.5% of total</div>
+          <div className="font-jetbrains text-2xl font-bold text-text-primary">Rs. 0</div>
+          <div className="text-[10px] text-text-secondary mt-1">0% of total</div>
         </div>
       </div>
 
@@ -221,13 +216,7 @@ export default function Portfolio() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { date: '2082-01-15', type: 'BUY', symbol: 'NABIL', qty: 50, rate: 1180, fees: 310 },
-                      { date: '2082-01-22', type: 'BUY', symbol: 'NICA', qty: 100, rate: 820, fees: 420 },
-                      { date: '2082-02-03', type: 'SELL', symbol: 'NABIL', qty: 20, rate: 1260, fees: 280 },
-                      { date: '2082-02-10', type: 'BUY', symbol: 'NHPC', qty: 200, rate: 580, fees: 580 },
-                      { date: '2082-02-20', type: 'BONUS', symbol: 'NICA', qty: 10, rate: 0, fees: 0 },
-                    ].map((t, i) => (
+                    {activePortfolio.transactions.length > 0 ? activePortfolio.transactions.map((t: any, i: number) => (
                       <tr key={i} className="border-b border-bg-border/30 hover:bg-bg-elevated/50 transition-colors">
                         <td className="table-cell font-jetbrains text-xs">{t.date}</td>
                         <td className="table-cell">
@@ -242,7 +231,13 @@ export default function Portfolio() {
                         <td className="table-cell text-right font-jetbrains text-text-primary">{t.rate > 0 ? formatNepaliNumber(t.qty * t.rate) : '—'}</td>
                         <td className="table-cell text-right font-jetbrains text-bear-red">{t.fees > 0 ? formatNepaliNumber(t.fees) : '—'}</td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr>
+                        <td colSpan={7} className="p-20 text-center text-text-muted">
+                          No transaction history found.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -265,21 +260,8 @@ export default function Portfolio() {
                 </div>
                 <div className="card p-5">
                   <h4 className="font-syne font-bold mb-4 text-sm">Sector Allocation</h4>
-                  <div className="space-y-3">
-                    {[
-                      { sector: 'Commercial Banks', pct: 55, color: 'bg-brand-cyan' },
-                      { sector: 'Hydropower', pct: 28, color: 'bg-bull-green' },
-                      { sector: 'Insurance', pct: 12, color: 'bg-brand-gold' },
-                      { sector: 'Others', pct: 5, color: 'bg-brand-violet' },
-                    ].map((s, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <span className="text-sm text-text-secondary w-40 shrink-0">{s.sector}</span>
-                        <div className="flex-1 h-2 bg-bg-base rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.pct}%` }} />
-                        </div>
-                        <span className="font-jetbrains text-xs font-bold text-text-primary w-10 text-right">{s.pct}%</span>
-                      </div>
-                    ))}
+                  <div className="space-y-4 py-8 text-center text-text-muted italic text-xs">
+                    Analysis will be available once you add holdings to your portfolio.
                   </div>
                 </div>
               </div>

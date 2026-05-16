@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter, Star, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { seedCompanies } from '../data/seed';
+
 import { fetchTodayPrices } from '../services/api';
 import { formatNepaliNumber, formatPercent, formatVolume, formatNPR, getPriceColorClass } from '../utils';
 import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
@@ -38,26 +38,22 @@ export default function LiveMarket() {
     const sectorMap = new Map();
     companyData.forEach((c: any) => sectorMap.set(c.symbol, c.sectorName));
 
-    const seedMap = new Map();
-    seedCompanies.forEach(c => seedMap.set(c.symbol, c));
-
     return rawData.map((s: any) => {
       const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || '';
-      const seedFallback = seedMap.get(s.symbol) || {};
       
       return {
         symbol: s.symbol, companyName: s.securityName || s.companyName || s.symbol,
         companyNameNepali: '', sector: normalizeSector(scripSector),
-      ltp: s.lastTradedPrice || s.ltp, previousClose: s.previousClose,
-      change: (s.lastTradedPrice || s.ltp) - s.previousClose,
-      changePercent: s.percentageChange || 0,
-      open: s.openPrice, high: s.highPrice, low: s.lowPrice,
-      volume: s.totalTradeQuantity || s.volume || 0,
-      turnover: s.totalTradeValue || s.totalTurnover || s.turnover || 0,
-      marketCap: s.marketCap || seedFallback.marketCap || 0,
-      week52High: s.fiftyTwoWeekHigh || seedFallback.week52High || 0, week52Low: s.fiftyTwoWeekLow || seedFallback.week52Low || 0,
-      eps: s.eps || seedFallback.eps || 0, peRatio: s.peRatio || seedFallback.peRatio || 0, bookValue: s.bookValue || seedFallback.bookValue || 0,
-      pbRatio: s.pbRatio || seedFallback.pbRatio || 0, dividendYield: s.dividendYield || seedFallback.dividendYield || 0,
+        ltp: s.lastTradedPrice || s.ltp, previousClose: s.previousClose,
+        change: (s.lastTradedPrice || s.ltp) - s.previousClose,
+        changePercent: s.percentageChange || 0,
+        open: s.openPrice, high: s.highPrice, low: s.lowPrice,
+        volume: s.totalTradeQuantity || s.volume || 0,
+        turnover: s.totalTradeValue || s.totalTurnover || s.turnover || 0,
+        marketCap: s.marketCap || 0,
+        week52High: s.fiftyTwoWeekHigh || 0, week52Low: s.fiftyTwoWeekLow || 0,
+        eps: s.eps || 0, peRatio: s.peRatio || 0, bookValue: s.bookValue || 0,
+        pbRatio: s.pbRatio || 0, dividendYield: s.dividendYield || 0,
       };
     });
   }, [rawData, companies]);

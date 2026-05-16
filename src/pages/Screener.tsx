@@ -2,20 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, ChevronDown, Check, X, Play, RotateCcw, Save } from 'lucide-react';
-import { seedCompanies } from '../data/seed';
-import { formatNepaliNumber, formatPercent, getPriceColorClass, formatVolume, formatNPR } from '../utils';
-
-interface FilterState {
-  sector: string[];
-  minPrice: string;
-  maxPrice: string;
-  minChange: string;
-  maxChange: string;
-  minPE: string;
-  maxPE: string;
-  minEPS: string;
-  minDividend: string;
-}
+import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
 
 const initialFilters: FilterState = {
   sector: [],
@@ -29,51 +16,84 @@ const initialFilters: FilterState = {
   minDividend: '',
 };
 
-const sectors = Array.from(new Set(seedCompanies.map(s => s.sector))).sort();
-
 export default function Screener() {
   const navigate = useNavigate();
+  const { data: rawData, isLoading: loadingLive } = useLiveTrading();
+  const { data: companies, isLoading: loadingCompanies } = useCompanyList();
+  
+  const stocks = useMemo(() => {
+    if (!rawData) return [];
+    
+    const companyData = companies || [];
+    const sectorMap = new Map();
+    companyData.forEach((c: any) => sectorMap.set(c.symbol, c.sectorName));
+
+    return rawData.map((s: any) => {
+      const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || 'Others';
+      
+      return {
+        symbol: s.symbol, 
+        companyName: s.securityName || s.companyName || s.symbol,
+        sector: scripSector,
+        ltp: s.lastTradedPrice || s.ltp || 0, 
+        previousClose: s.previousClose || 0,
+        changePercent: s.percentageChange || 0,
+        volume: s.totalTradeQuantity || s.volume || 0,
+        turnover: s.totalTradeValue || s.totalTurnover || s.turnover || 0,
+        marketCap: s.marketCap || 0,
+        eps: s.eps || 0, 
+        peRatio: s.peRatio || 0, 
+        bookValue: s.bookValue || 0,
+        pbRatio: s.pbRatio || 0, 
+        dividendYield: s.dividendYield || 0,
+      };
+    });
+  }, [rawData, companies]);
+
+  const sectors = useMemo(() => {
+    const s = new Set(stocks.map(st => st.sector).filter(Boolean));
+    return Array.from(s).sort();
+  }, [stocks]);
+
   const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [results, setResults] = useState(seedCompanies);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const applyFilters = () => {
-    let filtered = [...seedCompanies];
+  const filteredResults = useMemo(() => {
+    let result = [...stocks];
 
     if (filters.sector.length > 0) {
-      filtered = filtered.filter(s => filters.sector.includes(s.sector));
+      result = result.filter(s => filters.sector.includes(s.sector));
     }
     if (filters.minPrice) {
-      filtered = filtered.filter(s => s.ltp >= parseFloat(filters.minPrice));
+      result = result.filter(s => s.ltp >= parseFloat(filters.minPrice));
     }
     if (filters.maxPrice) {
-      filtered = filtered.filter(s => s.ltp <= parseFloat(filters.maxPrice));
+      result = result.filter(s => s.ltp <= parseFloat(filters.maxPrice));
     }
     if (filters.minChange) {
-      filtered = filtered.filter(s => s.changePercent >= parseFloat(filters.minChange));
+      result = result.filter(s => s.changePercent >= parseFloat(filters.minChange));
     }
     if (filters.maxChange) {
-      filtered = filtered.filter(s => s.changePercent <= parseFloat(filters.maxChange));
+      result = result.filter(s => s.changePercent <= parseFloat(filters.maxChange));
     }
     if (filters.minPE) {
-      filtered = filtered.filter(s => (s.peRatio || 0) >= parseFloat(filters.minPE));
+      result = result.filter(s => (s.peRatio || 0) >= parseFloat(filters.minPE));
     }
     if (filters.maxPE) {
-      filtered = filtered.filter(s => (s.peRatio || 0) <= parseFloat(filters.maxPE));
+      result = result.filter(s => (s.peRatio || 0) <= parseFloat(filters.maxPE));
     }
     if (filters.minEPS) {
-      filtered = filtered.filter(s => (s.eps || 0) >= parseFloat(filters.minEPS));
+      result = result.filter(s => (s.eps || 0) >= parseFloat(filters.minEPS));
     }
     if (filters.minDividend) {
-      filtered = filtered.filter(s => (s.dividendYield || 0) >= parseFloat(filters.minDividend));
+      result = result.filter(s => (s.dividendYield || 0) >= parseFloat(filters.minDividend));
     }
 
-    setResults(filtered);
-  };
+    return result;
+  }, [stocks, filters]);
 
   const resetFilters = () => {
     setFilters(initialFilters);
-    setResults(seedCompanies);
   };
 
   const toggleSector = (sector: string) => {
@@ -189,10 +209,10 @@ export default function Screener() {
 
         <div className="p-4 border-t border-bg-border bg-bg-base/30">
           <button 
-            onClick={applyFilters}
-            className="btn-primary w-full py-2 flex items-center justify-center gap-2"
+            onClick={resetFilters}
+            className="btn-secondary w-full py-2 flex items-center justify-center gap-2"
           >
-            <Play size={16} /> Run Screener
+            <RotateCcw size={16} /> Reset All Filters
           </button>
         </div>
       </aside>
@@ -209,7 +229,7 @@ export default function Screener() {
             </button>
             <div>
               <h1 className="font-syne text-xl font-bold">Stock Screener</h1>
-              <p className="text-xs text-text-secondary">{results.length} companies matched your criteria</p>
+              <p className="text-xs text-text-secondary">{filteredResults.length} companies matched your criteria</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -244,7 +264,7 @@ export default function Screener() {
                 </tr>
               </thead>
               <tbody>
-                {results.map((s, i) => (
+                {filteredResults.map((s, i) => (
                   <tr 
                     key={s.symbol}
                     onClick={() => navigate(`/stock/${s.symbol}`)}
@@ -266,7 +286,7 @@ export default function Screener() {
                     <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNPR(s.marketCap || 0, true)}</td>
                   </tr>
                 ))}
-                {results.length === 0 && (
+                {filteredResults.length === 0 && (
                   <tr>
                     <td colSpan={9} className="p-20 text-center text-text-muted">
                       <div className="flex flex-col items-center gap-2">

@@ -2,17 +2,62 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, BookOpen, Filter, Download, ArrowUpRight, ArrowDownRight, Info, TrendingUp } from 'lucide-react';
-import { seedCompanies } from '../data/seed';
-import { formatNPR, formatPercent, getPriceColorClass } from '../utils';
+import { formatNPR, formatPercent, getPriceColorClass, formatNepaliNumber } from '../utils';
+import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
+import { useMemo } from 'react';
 
 export default function Fundamentals() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   
-  const filtered = seedCompanies.filter(s => 
-    s.symbol.toLowerCase().includes(search.toLowerCase()) || 
-    s.companyName.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data: rawData, isLoading: loadingLive } = useLiveTrading();
+  const { data: companies, isLoading: loadingCompanies } = useCompanyList();
+  
+  const stocks = useMemo(() => {
+    if (!rawData) return [];
+    
+    const companyData = companies || [];
+    const sectorMap = new Map();
+    companyData.forEach((c: any) => sectorMap.set(c.symbol, c.sectorName));
+
+    return rawData.map((s: any) => {
+      const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || 'Others';
+      
+      return {
+        symbol: s.symbol, 
+        companyName: s.securityName || s.companyName || s.symbol,
+        sector: scripSector,
+        eps: s.eps || 0, 
+        peRatio: s.peRatio || 0, 
+        bookValue: s.bookValue || 0,
+        pbRatio: s.pbRatio || 0, 
+        dividendYield: s.dividendYield || 0,
+        marketCap: s.marketCap || 0,
+      };
+    });
+  }, [rawData, companies]);
+
+  const filtered = useMemo(() => {
+    return stocks.filter(s => 
+      s.symbol.toLowerCase().includes(search.toLowerCase()) || 
+      s.companyName.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [stocks, search]);
+
+  const stats = useMemo(() => {
+    if (stocks.length === 0) return { avgPE: '—', avgDiv: '—', avgPB: '—' };
+    
+    const peStocks = stocks.filter(s => s.peRatio > 0);
+    const avgPE = peStocks.length > 0 ? (peStocks.reduce((acc, s) => acc + s.peRatio, 0) / peStocks.length).toFixed(2) : '—';
+    
+    const divStocks = stocks.filter(s => s.dividendYield > 0);
+    const avgDiv = divStocks.length > 0 ? (divStocks.reduce((acc, s) => acc + s.dividendYield, 0) / divStocks.length).toFixed(2) : '—';
+    
+    const pbStocks = stocks.filter(s => s.pbRatio > 0);
+    const avgPB = pbStocks.length > 0 ? (pbStocks.reduce((acc, s) => acc + s.pbRatio, 0) / pbStocks.length).toFixed(2) : '—';
+    
+    return { avgPE, avgDiv, avgPB };
+  }, [stocks]);
 
   return (
     <div className="space-y-6">
@@ -44,8 +89,8 @@ export default function Fundamentals() {
                  <Info size={14} />
               </div>
            </div>
-           <div className="text-3xl font-syne font-black text-text-primary">24.52</div>
-           <p className="text-xs text-text-secondary mt-2">Market is currently valued at a premium compared to 5-year average (18.2).</p>
+           <div className="text-3xl font-syne font-black text-text-primary">{stats.avgPE}</div>
+           <p className="text-xs text-text-secondary mt-2">Current average P/E ratio across the market based on live data.</p>
         </div>
         <div className="card p-6 bg-gradient-to-br from-bg-surface to-bg-base border-bull-green/20">
            <div className="flex items-center justify-between mb-4">
@@ -54,8 +99,8 @@ export default function Fundamentals() {
                  <TrendingUp size={14} />
               </div>
            </div>
-           <div className="text-3xl font-syne font-black text-text-primary">3.15%</div>
-           <p className="text-xs text-text-secondary mt-2">Historical dividend distributions are trending upwards this fiscal year.</p>
+           <div className="text-3xl font-syne font-black text-text-primary">{stats.avgDiv}%</div>
+           <p className="text-xs text-text-secondary mt-2">Average dividend yield for companies with active dividend distributions.</p>
         </div>
         <div className="card p-6 bg-gradient-to-br from-bg-surface to-bg-base border-brand-gold/20">
            <div className="flex items-center justify-between mb-4">
@@ -64,8 +109,8 @@ export default function Fundamentals() {
                  <Filter size={14} />
               </div>
            </div>
-           <div className="text-3xl font-syne font-black text-text-primary">2.84</div>
-           <p className="text-xs text-text-secondary mt-2">Asset-backed valuation remains stable across most commercial banks.</p>
+           <div className="text-3xl font-syne font-black text-text-primary">{stats.avgPB}</div>
+           <p className="text-xs text-text-secondary mt-2">Average Price to Book ratio indicating asset-backed valuation levels.</p>
         </div>
       </div>
 
@@ -99,7 +144,7 @@ export default function Fundamentals() {
                   <td className="table-cell text-right font-jetbrains text-text-secondary">{s.bookValue || '—'}</td>
                   <td className="table-cell text-right font-jetbrains text-text-secondary">{s.pbRatio || '—'}</td>
                   <td className="table-cell text-right font-jetbrains text-text-secondary">{s.dividendYield ? `${s.dividendYield}%` : '—'}</td>
-                  <td className="table-cell text-right font-jetbrains text-bull-green">18.4%</td>
+                  <td className="table-cell text-right font-jetbrains text-bull-green">—</td>
                   <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNPR(s.marketCap || 0, true)}</td>
                 </tr>
               ))}

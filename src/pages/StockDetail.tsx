@@ -6,7 +6,6 @@ import {
   MessageSquare, Layers, TrendingUp, TrendingDown, Clock, Globe, Search
 } from 'lucide-react';
 import { useMarketStore, useWatchlistStore, useUIStore } from '../store';
-import { seedCompanies } from '../data/seed';
 import { 
   useStockPrice, useStockDetail, useStockChart, useCompanyFloorsheet, 
   useCompanyList, useBrokers, useLiveTrading 
@@ -17,7 +16,7 @@ import {
 } from '../utils';
 import { fetchSecurityDetail, fetchGraphData } from '../services/api';
 import CandlestickChart from '../components/charts/CandlestickChart';
-import { generateMockOHLCV } from '../utils/mockData';
+
 import TechnicalGauge from '../components/shared/TechnicalGauge';
 
 // Tab Components (to be implemented)
@@ -106,9 +105,9 @@ const FundamentalsTab = ({ apiStock }: { apiStock: any }) => {
     { label: 'Book Value Per Share', value: apiStock?.bookValue || '—', note: 'Net assets divided by shares' },
     { label: 'Price to Book (P/B)', value: apiStock?.pbRatio || '—', note: 'Market price / Book value' },
     { label: 'Dividend Yield', value: apiStock?.dividendYield ? `${apiStock.dividendYield}%` : '—', note: 'Annual dividend / current price' },
-    { label: 'Return on Equity (ROE)', value: '18.4%', note: 'Net profit / shareholder equity' },
-    { label: 'Return on Assets (ROA)', value: '2.1%', note: 'Net income / total assets' },
-    { label: 'Net Interest Margin', value: '3.8%', note: 'For banking sector' },
+    { label: 'Return on Equity (ROE)', value: apiStock?.roe || '—', note: 'Net profit / shareholder equity' },
+    { label: 'Return on Assets (ROA)', value: apiStock?.roa || '—', note: 'Net income / total assets' },
+    { label: 'Net Interest Margin', value: apiStock?.nim || '—', note: 'For banking sector' },
     { label: 'Market Cap', value: formatNPR(apiStock?.marketCap || 0, true), note: 'Total market value' },
     { label: '52-Week High', value: formatNepaliNumber(apiStock?.week52High || 0), note: '' },
     { label: '52-Week Low', value: formatNepaliNumber(apiStock?.week52Low || 0), note: '' },
@@ -126,16 +125,8 @@ const FundamentalsTab = ({ apiStock }: { apiStock: any }) => {
       </div>
       <div className="card p-5 bg-brand-cyan/5 border-brand-cyan/20">
         <h4 className="font-syne font-bold text-sm mb-3 text-brand-cyan">Quarterly Dividend History</h4>
-        <div className="space-y-2">
-          {[{ fy: '2080/81', cash: '12%', bonus: '5%' }, { fy: '2079/80', cash: '10%', bonus: '8%' }, { fy: '2078/79', cash: '8%', bonus: '10%' }].map((d, i) => (
-            <div key={i} className="flex justify-between items-center py-2 border-b border-bg-border/30 last:border-0">
-              <span className="text-sm font-bold text-text-primary">FY {d.fy}</span>
-              <div className="flex gap-4">
-                <span className="text-xs text-bull-green font-bold">Cash: {d.cash}</span>
-                <span className="text-xs text-brand-gold font-bold">Bonus: {d.bonus}</span>
-              </div>
-            </div>
-          ))}
+        <div className="space-y-4 py-8 text-center text-text-muted text-xs italic">
+          Dividend history data not available in the current API version.
         </div>
       </div>
     </div>
@@ -332,70 +323,18 @@ const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
 };
 const TechnicalsTab = ({ symbol }: { symbol: string }) => (
   <div className="space-y-8">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="card bg-bg-base/20 border-bg-border/50">
-        <TechnicalGauge value={65} label="Summary" subLabel="Strong Bullish Momentum" />
-      </div>
-      <div className="card bg-bg-base/20 border-bg-border/50">
-        <TechnicalGauge value={20} label="Oscillators" subLabel="RSI, Stochastic, CCI" />
-      </div>
-      <div className="card bg-bg-base/20 border-bg-border/50">
-        <TechnicalGauge value={85} label="Moving Averages" subLabel="SMA, EMA Cross" />
-      </div>
-    </div>
-    
-    <div className="card overflow-hidden">
-      <div className="p-4 border-b border-bg-border bg-bg-base/30">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">Key Indicators Summary</h4>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-bg-border/30">
-        {[
-          { name: 'RSI (14)', value: '62.45', action: 'Buy' },
-          { name: 'MACD (12, 26)', value: 'Positive', action: 'Strong Buy' },
-          { name: 'Stochastic %K', value: '78.12', action: 'Neutral' },
-          { name: 'EMA (50)', value: '1245.20', action: 'Buy' },
-          { name: 'SMA (200)', value: '1180.45', action: 'Strong Buy' },
-          { name: 'ADX (14)', value: '28.15', action: 'Trending' },
-        ].map((item, i) => (
-          <div key={i} className="bg-bg-surface p-4 flex justify-between items-center">
-            <div>
-              <div className="text-[10px] text-text-muted uppercase mb-0.5">{item.name}</div>
-              <div className="font-jetbrains text-sm font-bold text-text-primary">{item.value}</div>
-            </div>
-            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${item.action.includes('Buy') ? 'bg-bull-green/10 text-bull-green' : 'bg-bg-elevated text-text-secondary'}`}>
-              {item.action}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="p-20 text-center text-text-muted italic border border-bg-border/30 rounded-xl">
+       Real-time technical indicators for {symbol} are coming in the next update.
     </div>
   </div>
 );
 const NewsTab = ({ symbol }: { symbol: string }) => {
-  const newsItems = [
-    { id: 1, headline: `${symbol} posts record quarterly profit, board declares 15% cash dividend`, source: 'Mero Lagani', date: '2082-02-05', category: 'Dividend', positive: true },
-    { id: 2, headline: `NEPSE index declines amid profit booking; ${symbol} dips 2.3%`, source: 'ShareSansar', date: '2082-02-03', category: 'Market', positive: false },
-    { id: 3, headline: `${symbol} AGM scheduled for Jestha 2082; agenda includes bonus share proposal`, source: 'NepseAlpha', date: '2082-01-28', category: 'Corporate', positive: true },
-    { id: 4, headline: `Foreign investment cap raised; ${symbol} could benefit from increased FDI`, source: 'The Himalayan Times', date: '2082-01-25', category: 'Policy', positive: true },
-    { id: 5, headline: `${symbol} Q3 report shows 12% YoY profit growth`, source: 'Arthik Abhiyan', date: '2082-01-20', category: 'Financial', positive: true },
-  ];
   return (
     <div className="space-y-4">
       <h4 className="font-syne font-bold">Latest News — {symbol}</h4>
-      {newsItems.map(n => (
-        <div key={n.id} className="card p-4 hover:border-bg-border/80 transition-all group cursor-pointer">
-          <div className="flex items-start gap-4">
-            <div className={`w-1 self-stretch rounded-full shrink-0 ${n.positive ? 'bg-bull-green' : 'bg-bear-red'}`} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${n.positive ? 'bg-bull-green/10 text-bull-green' : 'bg-bear-red/10 text-bear-red'}`}>{n.category}</span>
-                <span className="text-[10px] text-text-muted">{n.source} • {n.date}</span>
-              </div>
-              <h5 className="text-sm font-medium text-text-primary group-hover:text-brand-cyan transition-colors leading-snug">{n.headline}</h5>
-            </div>
-          </div>
-        </div>
-      ))}
+      <div className="p-20 text-center text-text-muted italic border border-bg-border/30 rounded-xl">
+         No specific news found for {symbol} at this time.
+      </div>
     </div>
   );
 };
@@ -407,21 +346,17 @@ const PeersTab = ({ symbol, sector, allStocks, companies }: { symbol: string, se
   }, [companies]);
 
   const peers = useMemo(() => {
-    const seedMap = new Map();
-    seedCompanies.forEach(c => seedMap.set(c.symbol, c));
-
     return (allStocks || [])
       .map((s: any) => {
         const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector;
-        const seedFallback = seedMap.get(s.symbol) || {};
         return {
           ...s,
           sector: scripSector,
           ltp: s.lastTradedPrice || s.ltp || 0,
           changePercent: s.percentageChange || s.changePercent || 0,
-          marketCap: s.marketCap || seedFallback.marketCap || 0,
-          peRatio: s.peRatio || seedFallback.peRatio || 0,
-          eps: s.eps || seedFallback.eps || 0
+          marketCap: s.marketCap || 0,
+          peRatio: s.peRatio || 0,
+          eps: s.eps || 0
         };
       })
       .filter(s => {
@@ -544,7 +479,7 @@ export default function StockDetail() {
 
   const sdt = priceData?.securityDailyTradeDto || {};
   const sec = priceData?.security || {};
-  const mockFundamentals = seedCompanies.find(s => s.symbol === safeSymbol) || {};
+
 
   const stock = {
     symbol: safeSymbol,
@@ -563,11 +498,14 @@ export default function StockDetail() {
     marketCap: priceData?.marketCapitalization || detailData?.marketCap || 0,
     week52High: sdt.fiftyTwoWeekHigh || detailData?.fiftyTwoWeekHigh || 0,
     week52Low: sdt.fiftyTwoWeekLow || detailData?.fiftyTwoWeekLow || 0,
-    eps: mockFundamentals.eps,
-    peRatio: mockFundamentals.peRatio,
-    bookValue: mockFundamentals.bookValue,
-    pbRatio: mockFundamentals.pbRatio,
-    dividendYield: mockFundamentals.dividendYield,
+    eps: detailData?.eps || 0,
+    peRatio: detailData?.peRatio || 0,
+    bookValue: detailData?.bookValue || 0,
+    pbRatio: detailData?.pbRatio || 0,
+    dividendYield: detailData?.dividendYield || 0,
+    roe: detailData?.roe || 0,
+    roa: detailData?.roa || 0,
+    nim: detailData?.nim || 0,
   };
 
   const rawGraphData = graphData?.content || (Array.isArray(graphData) ? graphData : []);
@@ -609,8 +547,7 @@ export default function StockDetail() {
         volume: d.totalTradedQuantity ?? d.volume ?? 0,
       };
     });
-  } else {
-    chartData = generateMockOHLCV(safeSymbol, 180, stock.ltp || 1000);
+    chartData = [];
   }
 
   if (!stock.ltp && !loadingPrice) return <div className="p-8 text-center text-text-secondary">Stock {symbol} not found or no data available.</div>;
@@ -690,7 +627,7 @@ export default function StockDetail() {
             { label: 'Book Value', value: stock.bookValue },
             { label: 'P/B Ratio', value: stock.pbRatio },
             { label: 'Div Yield', value: formatPercent(stock.dividendYield || 0) },
-            { label: 'ROE', value: '18.4%' },
+            { label: 'ROE', value: stock.roe ? `${stock.roe}%` : '—' },
           ].map((stat, i) => (
             <div key={i} className="bg-bg-base/50 rounded-lg p-3 border border-bg-border/30">
               <div className="text-[10px] text-text-muted uppercase mb-1">{stat.label}</div>

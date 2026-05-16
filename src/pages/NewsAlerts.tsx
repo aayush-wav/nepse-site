@@ -3,11 +3,7 @@ import { motion } from 'framer-motion';
 import { Bell, TrendingUp, Calendar, FileText, Zap, CheckCircle, X, Plus } from 'lucide-react';
 import { useNews } from '../hooks/useNepseData';
 
-const alerts = [
-  { id: 1, symbol: 'NABIL', type: 'Price Above', value: 1300, active: true },
-  { id: 2, symbol: 'UPPER', type: 'Price Below', value: 350, active: true },
-  { id: 3, symbol: 'NHPC', type: 'Volume Above', value: 100000, active: false },
-];
+const alerts: any[] = [];
 
 export default function NewsAlerts() {
   const [activeTab, setActiveTab] = useState<'news' | 'alerts'>('news');

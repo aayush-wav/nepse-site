@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useNepseData';
 import { formatNPR, formatPercent, formatVolume, getPriceColorClass, formatNepaliNumber } from '../utils';
-import { seedEvents } from '../data/seed';
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -156,7 +156,7 @@ export default function Dashboard() {
     const transactions = findSummary('Transactions');
     const sectors = (sector_indices || []).slice().sort((a: any, b: any) => (b.perChange || 0) - (a.perChange || 0));
     const leadingSector = sectors[0];
-    const events = apiEvents || seedEvents;
+    const events = apiEvents || [];
 
 
     const insights: { emoji: string; text: string; color: string }[] = [];

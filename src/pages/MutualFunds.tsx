@@ -3,20 +3,51 @@ import { motion } from 'framer-motion';
 import { Search, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 import { formatNPR, formatPercent, getPriceColorClass } from '../utils';
 
-const mutualFunds = [
-  { symbol: 'NBF3', name: 'Nabil Balanced Fund-3', manager: 'Nabil Investment', nav: 12.45, navChange: 0.18, totalAUM: 2000000000, type: 'Closed', maturity: '2085-06-30' },
-  { symbol: 'NICGF', name: 'NIC Asia Growth Fund', manager: 'NIC Asia Capital', nav: 15.82, navChange: -0.12, totalAUM: 1500000000, type: 'Closed', maturity: '2084-12-31' },
-  { symbol: 'SEF', name: 'Siddhartha Equity Fund', manager: 'Siddhartha Capital', nav: 11.20, navChange: 0.25, totalAUM: 1000000000, type: 'Open', maturity: 'Open-ended' },
-  { symbol: 'PRSF', name: 'Prabhu Select Fund', manager: 'Prabhu Capital', nav: 13.40, navChange: 0.05, totalAUM: 800000000, type: 'Closed', maturity: '2086-03-15' },
-  { symbol: 'GIMES1', name: 'Global IME Samunat Equity Fund 1', manager: 'Global IME Capital', nav: 10.95, navChange: -0.08, totalAUM: 600000000, type: 'Closed', maturity: '2084-09-30' },
-  { symbol: 'LBBLMF1', name: 'Laxmi Banking and Finance MF-1', manager: 'Laxmi Capital', nav: 14.20, navChange: 0.32, totalAUM: 750000000, type: 'Closed', maturity: '2085-01-15' },
-];
+import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
+import { useMemo } from 'react';
 
 export default function MutualFunds() {
   const [search, setSearch] = useState('');
-  const filtered = mutualFunds.filter(f => 
-    f.name.toLowerCase().includes(search.toLowerCase()) || f.symbol.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data: rawData, isLoading: loadingLive } = useLiveTrading();
+  const { data: companies } = useCompanyList();
+  
+  const mutualFunds = useMemo(() => {
+    if (!rawData) return [];
+    
+    const companyData = companies || [];
+    const sectorMap = new Map();
+    companyData.forEach((c: any) => sectorMap.set(c.symbol, c.sectorName));
+
+    return rawData
+      .filter((s: any) => {
+        const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || '';
+        return scripSector.toLowerCase().includes('mutual fund');
+      })
+      .map((s: any) => ({
+        symbol: s.symbol,
+        name: s.securityName || s.companyName || s.symbol,
+        manager: s.issuerName || '—',
+        nav: s.lastTradedPrice || s.ltp || 0,
+        navChange: s.percentageChange || s.changePercent || 0,
+        totalAUM: s.marketCap || 0,
+        type: 'Listed',
+        maturity: '—'
+      }));
+  }, [rawData, companies]);
+
+  const filtered = useMemo(() => {
+    return mutualFunds.filter(f => 
+      f.name.toLowerCase().includes(search.toLowerCase()) || f.symbol.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [mutualFunds, search]);
+
+  const stats = useMemo(() => {
+    if (mutualFunds.length === 0) return { totalAUM: 0, aboveFace: 0, avgNAV: '0.00' };
+    const totalAUM = mutualFunds.reduce((a, f) => a + f.totalAUM, 0);
+    const aboveFace = mutualFunds.filter(f => f.nav > 10).length;
+    const avgNAV = (mutualFunds.reduce((a, f) => a + f.nav, 0) / mutualFunds.length).toFixed(2);
+    return { totalAUM, aboveFace, avgNAV };
+  }, [mutualFunds]);
 
   return (
     <div className="space-y-6">
@@ -37,15 +68,15 @@ export default function MutualFunds() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5 border-l-4 border-brand-cyan">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Total AUM</div>
-          <div className="font-jetbrains text-2xl font-bold">{formatNPR(mutualFunds.reduce((a, f) => a + f.totalAUM, 0), true)}</div>
+          <div className="font-jetbrains text-2xl font-bold">{formatNPR(stats.totalAUM, true)}</div>
         </div>
         <div className="card p-5 border-l-4 border-bull-green">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Funds Above Face Value</div>
-          <div className="font-jetbrains text-2xl font-bold text-bull-green">{mutualFunds.filter(f => f.nav > 10).length}</div>
+          <div className="font-jetbrains text-2xl font-bold text-bull-green">{stats.aboveFace}</div>
         </div>
         <div className="card p-5 border-l-4 border-brand-gold">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Average NAV</div>
-          <div className="font-jetbrains text-2xl font-bold">{(mutualFunds.reduce((a, f) => a + f.nav, 0) / mutualFunds.length).toFixed(2)}</div>
+          <div className="font-jetbrains text-2xl font-bold">{stats.avgNAV}</div>
         </div>
       </div>
 

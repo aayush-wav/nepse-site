@@ -10,8 +10,6 @@ import {
   RSIPanel, MACDPanel, StochasticPanel, ATRPanel,
   OBVPanel, WilliamsRPanel, VolumePanel,
 } from '../components/charts/IndicatorPanels';
-import { generateOHLCV } from '../utils/indicators';
-import { seedCompanies } from '../data/seed';
 import { fetchTodayPrices, fetchGraphData, fetchCompanyPrice } from '../services/api';
 import { formatNepaliNumber, formatVolume, formatNPR, formatPercent, getPriceColorClass } from '../utils';
 import { useCompanyList, useStockChart, useStockPrice } from '../hooks/useNepseData';
@@ -81,7 +79,7 @@ export default function AdvancedCharts() {
   const { data: chartGraphData, isLoading: loadingChart } = useStockChart(symbol);
   const { data: livePriceData } = useStockPrice(symbol);
   
-  const allStocks = companyList || seedCompanies;
+  const allStocks = companyList || [];
   const filteredSymbols = useMemo(() => {
     return allStocks.filter((s: any) =>
       s.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,9 +134,7 @@ export default function AdvancedCharts() {
       });
       return mapped.filter((d: any) => d.date && d.close > 0).slice(-bars);
     }
-    // Fallback: generate realistic mock data
-    const bars = TFBARS[timeframe] ?? 90;
-    return generateOHLCV(symbol, bars, livePriceData?.lastTradedPrice ?? seedCompanies.find(s => s.symbol === symbol)?.ltp ?? 1000);
+    return [];
   }, [symbol, timeframe, apiChartData, livePriceData]);
 
   const toggleOverlay = useCallback((id: string) => {
@@ -149,7 +145,7 @@ export default function AdvancedCharts() {
   }, []);
 
   const info = useMemo(() => {
-    let base = allStocks.find((s: any) => s.symbol === symbol) || seedCompanies.find(s => s.symbol === symbol);
+    let base = allStocks.find((s: any) => s.symbol === symbol) || null;
     if (livePriceData) {
       return {
         ...base,
@@ -352,7 +348,7 @@ export default function AdvancedCharts() {
             <span className="text-[10px] text-bull-green font-bold px-2 py-0.5 rounded bg-bull-green/10 border border-bull-green/20">● LIVE DATA</span>
           )}
           {!(apiChartData && apiChartData.length > 0) && (
-            <span className="text-[10px] text-neutral-yellow font-bold px-2 py-0.5 rounded bg-neutral-yellow/10 border border-neutral-yellow/20">● SIMULATED</span>
+            <span className="text-[10px] text-text-muted font-bold px-2 py-0.5 rounded bg-bg-elevated border border-bg-border">NO CHART DATA</span>
           )}
           <button onClick={() => setIsFullscreen(v => !v)}
             className="p-1.5 rounded-lg hover:bg-bg-elevated text-text-muted hover:text-text-primary transition-colors" title="Fullscreen">

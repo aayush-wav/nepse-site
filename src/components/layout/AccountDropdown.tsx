@@ -25,8 +25,8 @@ export default function AccountDropdown({ onClose }: AccountDropdownProps) {
             <User size={20} className="text-white" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-syne font-bold text-sm text-text-primary truncate">Aayush Shrestha</span>
-            <span className="text-[11px] text-text-muted truncate">aayush.wav@gmail.com</span>
+            <span className="font-syne font-bold text-sm text-text-primary truncate">Guest User</span>
+            <span className="text-[11px] text-text-muted truncate">Sign in to sync data</span>
           </div>
         </div>
       </div>
