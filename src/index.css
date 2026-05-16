@@ -1,0 +1,324 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #070C14;
+  --bg-surface: #0D1421;
+  --bg-elevated: #131B2E;
+  --bg-border: #1C2640;
+  --brand-cyan: #00D4FF;
+  --brand-violet: #7C5CFC;
+  --brand-gold: #F2C94C;
+  --bull-green: #00C48C;
+  --bear-red: #FF4D4F;
+  --neutral-yellow: #F5A623;
+  --text-primary: #E8EDF5;
+  --text-secondary: #7B8DB0;
+  --text-muted: #3D4F6E;
+  --text-inverse: #070C14;
+  --glow-cyan: 0 0 24px rgba(0,212,255,0.18);
+  --glow-green: 0 0 16px rgba(0,196,140,0.2);
+  --glow-red: 0 0 16px rgba(255,77,79,0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-numbers {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-nepali {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--text-primary);
+}
+
+/* Card Component */
+@layer components {
+  .card {
+    @apply bg-bg-surface border border-bg-border rounded-card shadow-card;
+  }
+  
+  .card-elevated {
+    @apply bg-bg-elevated border border-bg-border rounded-card shadow-card;
+  }
+  
+  .btn-primary {
+    @apply bg-brand-cyan text-bg-base font-semibold px-4 py-2 rounded-lg 
+           hover:scale-105 hover:shadow-glow-cyan active:scale-95
+           transition-all duration-200 ease-out;
+  }
+  
+  .btn-secondary {
+    @apply border border-brand-cyan text-brand-cyan bg-transparent px-4 py-2 rounded-lg
+           hover:bg-brand-cyan/10 hover:shadow-glow-cyan active:scale-95
+           transition-all duration-200 ease-out;
+  }
+  
+  .btn-ghost {
+    @apply text-text-secondary hover:text-text-primary hover:bg-bg-elevated
+           px-3 py-2 rounded-lg transition-all duration-200;
+  }
+  
+  .badge-green {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-bull-green/15 text-bull-green border border-bull-green/20;
+  }
+  
+  .badge-red {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-bear-red/15 text-bear-red border border-bear-red/20;
+  }
+  
+  .badge-yellow {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-neutral-yellow/15 text-neutral-yellow border border-neutral-yellow/20;
+  }
+  
+  .badge-cyan {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-brand-cyan/15 text-brand-cyan border border-brand-cyan/20;
+  }
+  
+  .badge-violet {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-brand-violet/15 text-brand-violet border border-brand-violet/20;
+  }
+  
+  .input-field {
+    @apply bg-bg-base border border-bg-border rounded-lg px-3 py-2 text-text-primary
+           placeholder:text-text-muted focus:outline-none focus:border-brand-cyan
+           focus:ring-1 focus:ring-brand-cyan/30 transition-all duration-200;
+  }
+  
+  .table-header {
+    @apply text-left text-xs font-semibold text-text-secondary uppercase tracking-wider
+           px-4 py-3 bg-bg-base border-b border-bg-border;
+  }
+  
+  .table-cell {
+    @apply px-4 py-3 text-sm border-b border-bg-border/50;
+  }
+  
+  .table-row-zebra:nth-child(even) {
+    @apply bg-bg-elevated/50;
+  }
+  
+  .skeleton {
+    @apply bg-gradient-to-r from-bg-surface via-bg-elevated to-bg-surface
+           bg-[length:200%_100%] animate-shimmer rounded;
+  }
+  
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-secondary
+           hover:text-text-primary hover:bg-bg-elevated/70 transition-all duration-200
+           cursor-pointer text-sm;
+  }
+  
+  .nav-item-active {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-brand-cyan
+           bg-bg-elevated border-l-2 border-brand-cyan cursor-pointer text-sm font-medium;
+  }
+  
+  .stat-value {
+    @apply font-jetbrains text-2xl font-bold;
+  }
+  
+  .stat-label {
+    @apply text-xs text-text-secondary uppercase tracking-wider;
+  }
+  
+  .price-up {
+    @apply text-bull-green;
+  }
+  
+  .price-down {
+    @apply text-bear-red;
+  }
+  
+  .price-neutral {
+    @apply text-neutral-yellow;
+  }
+  
+  .glow-border-cyan {
+    @apply border border-brand-cyan/30 shadow-glow-cyan;
+  }
+}
+
+/* Ticker Tape */
+.ticker-tape {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-tape-content {
+  display: inline-flex;
+  animation: ticker-scroll 120s linear infinite;
+}
+
+.ticker-tape:hover .ticker-tape-content {
+  animation-play-state: paused;
+}
+
+/* Price Flash Animation */
+.flash-green {
+  animation: flash-green 0.3s ease-out;
+}
+
+.flash-red {
+  animation: flash-red 0.3s ease-out;
+}
+
+@keyframes flash-green {
+  0% { background-color: rgba(0,196,140,0.35); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+  0% { background-color: rgba(255,77,79,0.35); }
+  100% { background-color: transparent; }
+}
+
+/* Chart Container */
+.chart-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.chart-container canvas {
+  border-radius: 8px;
+}
+
+/* Responsive Tables */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  background: rgba(7, 12, 20, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(13, 20, 33, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(28, 38, 64, 0.5);
+}
+
+/* Market Status Indicators */
+.status-open {
+  @apply w-2 h-2 rounded-full bg-bull-green;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-closed {
+  @apply w-2 h-2 rounded-full bg-bear-red;
+}
+
+.status-preopen {
+  @apply w-2 h-2 rounded-full bg-neutral-yellow;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Gradient Text */
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #00D4FF, #7C5CFC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #F2C94C, #F5A623);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Heatmap Tile Colors */
+.heatmap-strong-bull { background: rgba(0,196,140,0.5); }
+.heatmap-bull { background: rgba(0,196,140,0.3); }
+.heatmap-mild-bull { background: rgba(0,196,140,0.15); }
+.heatmap-neutral { background: rgba(245,166,35,0.15); }
+.heatmap-mild-bear { background: rgba(255,77,79,0.15); }
+.heatmap-bear { background: rgba(255,77,79,0.3); }
+.heatmap-strong-bear { background: rgba(255,77,79,0.5); }
+
+/* Tab styles */
+.tab-item {
+  @apply px-4 py-2 text-sm text-text-secondary cursor-pointer
+         border-b-2 border-transparent hover:text-text-primary
+         transition-all duration-200;
+}
+
+.tab-item-active {
+  @apply px-4 py-2 text-sm text-brand-cyan cursor-pointer
+         border-b-2 border-brand-cyan font-medium;
+}
+
+/* Gauge/Dial */
+.gauge-container {
+  position: relative;
+  width: 200px;
+  height: 120px;
+}
