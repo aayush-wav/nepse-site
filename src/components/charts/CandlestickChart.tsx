@@ -1,31 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
 
+import { useUIStore } from '../../store';
+
 interface CandlestickChartProps {
   data: any[];
   height?: number;
-  colors?: {
-    backgroundColor?: string;
-    lineColor?: string;
-    textColor?: string;
-    areaTopColor?: string;
-    areaBottomColor?: string;
-  };
 }
 
 export default function CandlestickChart({
   data,
   height = 500,
-  colors: {
-    backgroundColor = '#0D1421',
-    lineColor = '#00D4FF',
-    textColor = '#7B8DB0',
-  } = {},
 }: CandlestickChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const candlestickSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
+
+  const { theme, accentColor } = useUIStore();
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -33,29 +25,42 @@ export default function CandlestickChart({
     const width = chartContainerRef.current.clientWidth;
     if (width <= 0) return;
 
+    // Helper to format comma-separated RGB to standard rgb() string
+    const formatColor = (val: string, fallback: string) => 
+      val ? `rgb(${val})` : fallback;
+
+    // Get current theme colors from CSS variables
+    const rs = getComputedStyle(document.documentElement);
+    const bgColor = formatColor(rs.getPropertyValue('--bg-surface').trim(), '#0D1421');
+    const textColor = formatColor(rs.getPropertyValue('--text-secondary').trim(), '#7B8DB0');
+    const tooltipBg = formatColor(rs.getPropertyValue('--bg-elevated').trim(), '#131B2E');
+    
+    const gridColor = theme === 'light' ? 'rgba(203, 213, 225, 0.5)' : 'rgba(28, 38, 64, 0.5)';
+    const brandColor = accentColor || '#00D4FF';
+
     try {
       const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { type: ColorType.Solid, color: backgroundColor },
+          background: { type: ColorType.Solid, color: bgColor },
           textColor,
           fontFamily: 'Outfit, sans-serif',
         },
         grid: {
-          vertLines: { color: 'rgba(28, 38, 64, 0.5)' },
-          horzLines: { color: 'rgba(28, 38, 64, 0.5)' },
+          vertLines: { color: gridColor },
+          horzLines: { color: gridColor },
         },
         crosshair: {
           mode: 0,
-          vertLine: { color: '#00D4FF', labelBackgroundColor: '#131B2E' },
-          horzLine: { color: '#00D4FF', labelBackgroundColor: '#131B2E' },
+          vertLine: { color: brandColor, labelBackgroundColor: tooltipBg },
+          horzLine: { color: brandColor, labelBackgroundColor: tooltipBg },
         },
         timeScale: {
-          borderColor: 'rgba(28, 38, 64, 0.8)',
+          borderColor: gridColor,
           timeVisible: true,
           secondsVisible: false,
         },
         rightPriceScale: {
-          borderColor: 'rgba(28, 38, 64, 0.8)',
+          borderColor: gridColor,
         },
         width,
         height,
@@ -100,7 +105,7 @@ export default function CandlestickChart({
     } catch (err) {
       console.error('Error creating candlestick chart:', err);
     }
-  }, [backgroundColor, textColor, height]);
+  }, [theme, accentColor, height]);
 
   useEffect(() => {
     if (!candlestickSeriesRef.current || !volumeSeriesRef.current || !data.length) return;

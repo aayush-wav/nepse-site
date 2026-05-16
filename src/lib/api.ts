@@ -40,4 +40,7 @@ export const nepseApi = {
 
   // Health
   health: () => fetch(`${BASE_URL}/health`).then(r => r.json()),
+
+  // News
+  getNews: () => apiFetch<any[]>("/api/news/"),
 };

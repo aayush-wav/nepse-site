@@ -33,9 +33,16 @@ export default function TopBar() {
   
   const summary = dashboardData?.market_summary || [];
   const totalTurnover = summary.find((s: any) => s.detail === 'Total Turnover Rs:')?.value || summary.find((s: any) => s.detail === 'Total Turnover')?.value || 0;
-  const advancing = summary.find((s: any) => s.detail === 'Total Advance')?.value || 0;
-  const declining = summary.find((s: any) => s.detail === 'Total Decline')?.value || 0;
-  const unchanged = summary.find((s: any) => s.detail === 'Total Unchanged')?.value || 0;
+  let advancing = summary.find((s: any) => s.detail === 'Total Advance')?.value || 0;
+  let declining = summary.find((s: any) => s.detail === 'Total Decline')?.value || 0;
+  let unchanged = summary.find((s: any) => s.detail === 'Total Unchanged')?.value || 0;
+
+  const liveMarketData = dashboardData?.live_market || [];
+  if (advancing === 0 && declining === 0 && liveMarketData.length > 0) {
+    advancing = liveMarketData.filter((s: any) => s.percentageChange > 0).length;
+    declining = liveMarketData.filter((s: any) => s.percentageChange < 0).length;
+    unchanged = liveMarketData.filter((s: any) => s.percentageChange === 0).length;
+  }
   
   const marketStatusObj = dashboardData?.market_status;
   const marketStatus = isNepalMarketOpen() ? 'OPEN' : 'CLOSED'; // Fallback to local calculation if API doesn't have it
@@ -50,8 +57,8 @@ export default function TopBar() {
   const seconds = Math.floor(countdown.seconds % 60);
 
   return (
-    <header className={`fixed top-0 right-0 z-30 h-auto bg-bg-surface/95 backdrop-blur-md border-b border-bg-border
-      transition-all duration-300 ${sidebarOpen ? 'left-60' : 'left-[68px]'}`}>
+    <header className={`fixed top-0 right-0 z-20 h-auto bg-bg-surface/95 backdrop-blur-md border-b border-bg-border
+      transition-all duration-300 ${sidebarOpen ? 'lg:left-60 left-0' : 'lg:left-[68px] left-0'}`}>
       
       {/* Market Pulse Bar */}
       <div className="flex items-center gap-4 px-4 h-12 overflow-x-auto scrollbar-none text-xs">

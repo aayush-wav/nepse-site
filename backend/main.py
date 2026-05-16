@@ -10,6 +10,7 @@ from routes.stocks import router as stocks_router
 from routes.floorsheet import router as floorsheet_router
 from routes.indices import router as indices_router
 from routes.summary import router as summary_router
+from routes.news import router as news_router
 from scheduler import start_scheduler
 
 load_dotenv()
@@ -61,6 +62,7 @@ app.include_router(stocks_router)
 app.include_router(floorsheet_router)
 app.include_router(indices_router)
 app.include_router(summary_router)
+app.include_router(news_router, prefix="/api/news", tags=["news"])
 
 @app.get("/health")
 def health_check():

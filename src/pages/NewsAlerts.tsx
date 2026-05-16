@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, TrendingUp, Calendar, FileText, Zap, CheckCircle, X, Plus } from 'lucide-react';
-
-const newsItems = [
-  { id: 1, headline: 'NEPSE hits 3-month high on strong banking sector performance', source: 'Mero Lagani', date: '2082-02-10', category: 'Market', sentiment: 'positive' },
-  { id: 2, headline: 'NRB raises interest rate cap; potential impact on banking stocks', source: 'ShareSansar', date: '2082-02-09', category: 'Policy', sentiment: 'negative' },
-  { id: 3, headline: 'NABIL reports 18% YoY profit growth for Q3 FY 2080/81', source: 'NepseAlpha', date: '2082-02-08', category: 'Financial', sentiment: 'positive' },
-  { id: 4, headline: 'Budget 2082/83 to focus on capital market development', source: 'The Himalayan Times', date: '2082-02-07', category: 'Policy', sentiment: 'positive' },
-  { id: 5, headline: 'Promoter lock-in period for 12 companies expires this month', source: 'Arthik Abhiyan', date: '2082-02-06', category: 'Promoter', sentiment: 'negative' },
-  { id: 6, headline: 'IPO oversubscription: TPC receives 12.5x applications', source: 'Mero Lagani', date: '2082-02-05', category: 'IPO', sentiment: 'positive' },
-];
+import { useNews } from '../hooks/useNepseData';
 
 const alerts = [
   { id: 1, symbol: 'NABIL', type: 'Price Above', value: 1300, active: true },
@@ -20,9 +12,11 @@ const alerts = [
 export default function NewsAlerts() {
   const [activeTab, setActiveTab] = useState<'news' | 'alerts'>('news');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const { data: newsData, isLoading } = useNews();
+  const newsItems = newsData || [];
 
   const categories = ['All', 'Market', 'Policy', 'Financial', 'IPO', 'Promoter'];
-  const filtered = newsItems.filter(n => categoryFilter === 'All' || n.category === categoryFilter);
+  const filtered = newsItems.filter((n: any) => categoryFilter === 'All' || n.category === categoryFilter);
 
   return (
     <div className="space-y-6">
@@ -66,7 +60,12 @@ export default function NewsAlerts() {
             ))}
           </div>
           <div className="space-y-3">
-            {filtered.map((n, i) => (
+            {isLoading && (
+              <div className="flex justify-center p-8 text-text-muted">
+                <span className="animate-pulse">Fetching live news...</span>
+              </div>
+            )}
+            {filtered.map((n: any, i: number) => (
               <motion.div
                 key={n.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -83,7 +82,9 @@ export default function NewsAlerts() {
                       }`}>{n.category}</span>
                       <span className="text-[10px] text-text-muted">{n.source} • {n.date}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-text-primary group-hover:text-brand-cyan transition-colors">{n.headline}</h3>
+                    <a href={n.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-text-primary group-hover:text-brand-cyan transition-colors line-clamp-2">
+                      {n.headline}
+                    </a>
                   </div>
                 </div>
               </motion.div>

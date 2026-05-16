@@ -348,7 +348,7 @@ export default function AdvancedCharts() {
       </div>
 
       {/* ─── MAIN CHART ──────────────────────── */}
-      <div className="card overflow-hidden border-bg-border/40 relative" style={{ background: '#0A0F1E' }}>
+      <div className="card overflow-hidden border-bg-border/40 relative bg-bg-surface">
         {chartLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-base/60 backdrop-blur-sm">
             <Loader2 size={32} className="text-brand-cyan animate-spin" />
@@ -363,7 +363,7 @@ export default function AdvancedCharts() {
           const config = ALL_INDICATORS.find(i => i.id === id)!;
           return (
             <motion.div key={id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: config.height }}
-              exit={{ opacity: 0, height: 0 }} className="card overflow-hidden border-bg-border/40" style={{ background: '#0A0F1E' }}>
+              exit={{ opacity: 0, height: 0 }} className="card overflow-hidden border-bg-border/40 bg-bg-surface">
               <div className="h-full flex flex-col">
                 <div className="flex items-center justify-between px-3 pt-1">
                   <div />

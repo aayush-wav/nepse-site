@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useUIStore } from './store';
@@ -22,15 +23,63 @@ import Education from './pages/Education';
 import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
-  const { sidebarOpen } = useUIStore();
+  const { sidebarOpen, theme, accentColor, compactMode } = useUIStore();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        root.classList.remove('light');
+      } else {
+        root.classList.add('light');
+      }
+    };
+
+    applyTheme();
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (compactMode) {
+      document.documentElement.classList.add('compact');
+    } else {
+      document.documentElement.classList.remove('compact');
+    }
+  }, [compactMode]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const hexToRgb = (hex: string) => {
+      if (!hex.startsWith('#')) return hex;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `${r}, ${g}, ${b}`;
+    };
+    root.style.setProperty('--brand-cyan', hexToRgb(accentColor));
+  }, [accentColor]);
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary selection:bg-brand-cyan/20">
       <Sidebar />
       <TopBar />
       
-      <main className={`transition-all duration-300 pt-16 min-h-screen ${sidebarOpen ? 'pl-60' : 'pl-[68px]'}`}>
-        <div className="p-6 max-w-[1600px] mx-auto">
+      <main className={`transition-all duration-300 pt-16 min-h-screen ${sidebarOpen ? 'lg:pl-60 pl-0' : 'lg:pl-[68px] pl-0'}`}>
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
+            onClick={() => useUIStore.getState().toggleSidebar()}
+          />
+        )}
+        <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />

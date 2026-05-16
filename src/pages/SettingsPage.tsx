@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, User, Bell, Shield, Palette, Database, Globe, ChevronRight, Check } from 'lucide-react';
+import { useUIStore } from '../store';
 
 export default function SettingsPage() {
+  const { theme, setTheme, accentColor, setAccentColor, calendarMode, setCalendarMode, compactMode, setCompactMode } = useUIStore();
   const [activeSection, setActiveSection] = useState('appearance');
-  const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState({ price: true, news: true, ipo: false, system: true });
   const [currency, setCurrency] = useState('NPR');
-  const [dateFormat, setDateFormat] = useState('BS');
   const [autoRefresh, setAutoRefresh] = useState('30');
 
   const sections = [
@@ -37,48 +37,63 @@ export default function SettingsPage() {
         <p className="text-xs text-text-secondary">Customize your NEPSE Elite experience</p>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar Nav */}
-        <aside className="w-52 shrink-0 space-y-1">
+        <aside className="w-full md:w-52 shrink-0 flex md:flex-col overflow-x-auto md:overflow-visible gap-2 md:gap-1 pb-2 md:pb-0 scrollbar-none">
           {sections.map(s => (
             <button
               key={s.id}
               onClick={() => setActiveSection(s.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left
+              className={`flex-shrink-0 md:w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left
                 ${activeSection === s.id ? 'bg-bg-elevated text-brand-cyan border border-bg-border' : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated/50'}`}
             >
               <s.icon size={16} />
-              {s.label}
-              {activeSection === s.id && <ChevronRight size={14} className="ml-auto" />}
+              <span className="whitespace-nowrap">{s.label}</span>
+              {activeSection === s.id && <ChevronRight size={14} className="ml-auto hidden md:block" />}
             </button>
           ))}
         </aside>
 
         {/* Content */}
-        <motion.div key={activeSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex-1 card p-6 space-y-6">
+        <motion.div key={activeSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex-1 card p-4 md:p-6 space-y-6 overflow-hidden">
           {activeSection === 'appearance' && (
             <>
               <h3 className="font-syne font-bold text-lg">Appearance</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between py-3 border-b border-bg-border/30">
                   <div>
-                    <div className="font-medium text-sm text-text-primary">Dark Mode</div>
-                    <div className="text-xs text-text-muted">Use the dark theme for all interfaces</div>
+                    <div className="font-medium text-sm text-text-primary">Theme Options</div>
+                    <div className="text-xs text-text-muted">Choose dark, light, or sync with system</div>
                   </div>
-                  <Toggle enabled={darkMode} onChange={setDarkMode} />
+                  <select
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value as 'dark' | 'light' | 'system')}
+                    className="input-field py-1.5 px-3 w-32"
+                  >
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="system">System</option>
+                  </select>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-bg-border/30">
                   <div>
                     <div className="font-medium text-sm text-text-primary">Compact View</div>
                     <div className="text-xs text-text-muted">Show more data in denser table layouts</div>
                   </div>
-                  <Toggle enabled={false} onChange={() => {}} />
+                  <Toggle enabled={compactMode} onChange={setCompactMode} />
                 </div>
                 <div className="space-y-2">
                   <div className="font-medium text-sm text-text-primary">Accent Color</div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-wrap">
                     {['#00D4FF', '#00C48C', '#F5A623', '#8B5CF6', '#FF4D4F'].map(c => (
-                      <button key={c} className={`w-8 h-8 rounded-full border-2 transition-all ${c === '#00D4FF' ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`} style={{ backgroundColor: c }} />
+                      <button 
+                        key={c} 
+                        onClick={() => setAccentColor(c)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${c === accentColor ? 'border-text-primary scale-110' : 'border-transparent hover:scale-105'}`} 
+                        style={{ backgroundColor: c }} 
+                      >
+                        {c === accentColor && <Check size={14} className="text-white" />}
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -121,9 +136,9 @@ export default function SettingsPage() {
                     {['BS', 'AD'].map(fmt => (
                       <button
                         key={fmt}
-                        onClick={() => setDateFormat(fmt)}
+                        onClick={() => setCalendarMode(fmt as 'BS' | 'AD' | 'both')}
                         className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all
-                          ${dateFormat === fmt ? 'bg-brand-cyan text-bg-base border-brand-cyan' : 'border-bg-border text-text-secondary'}`}
+                          ${calendarMode === fmt ? 'bg-brand-cyan text-bg-base border-brand-cyan' : 'border-bg-border text-text-secondary'}`}
                       >
                         {fmt === 'BS' ? 'Bikram Sambat (BS)' : 'Anno Domini (AD)'}
                       </button>

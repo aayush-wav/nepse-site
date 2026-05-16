@@ -10,6 +10,7 @@ import {
 } from 'lightweight-charts';
 import type { OHLCVBar } from '../../utils/indicators';
 import { calcSMA, calcEMA, calcBollingerBands, calcHeikinAshi, calcVWAP } from '../../utils/indicators';
+import { useUIStore } from '../../store';
 
 export type ChartType = 'candlestick' | 'heikin-ashi' | 'line' | 'area' | 'bar';
 export interface Overlay { id: string; label: string; color: string; enabled: boolean; }
@@ -36,6 +37,7 @@ function MainChart({ data, chartType, overlays, height = 540 }: Props) {
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
   const helperSeriesRef = useRef<Map<string, any>>(new Map());
+  const { theme, accentColor } = useUIStore();
 
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
@@ -44,29 +46,40 @@ function MainChart({ data, chartType, overlays, height = 540 }: Props) {
     if (width <= 0) return; // Wait for container to have a width
 
     try {
+      const formatColor = (val: string, fallback: string) => 
+        val ? `rgb(${val})` : fallback;
+
+      const rs = getComputedStyle(document.documentElement);
+      const bgColor = formatColor(rs.getPropertyValue('--bg-surface').trim(), CHART_COLORS.bg);
+      const textColor = formatColor(rs.getPropertyValue('--text-secondary').trim(), CHART_COLORS.text);
+      const tooltipBg = formatColor(rs.getPropertyValue('--bg-elevated').trim(), '#131B2E');
+      
+      const gridColor = theme === 'light' ? 'rgba(203, 213, 225, 0.5)' : CHART_COLORS.grid;
+      const brandColor = accentColor || '#00D4FF';
+
       const chart = createChart(containerRef.current, {
         layout: { 
-          background: { type: ColorType.Solid, color: CHART_COLORS.bg }, 
-          textColor: CHART_COLORS.text, 
+          background: { type: ColorType.Solid, color: bgColor }, 
+          textColor: textColor, 
           fontFamily: 'JetBrains Mono, monospace' 
         },
         grid: { 
-          vertLines: { color: CHART_COLORS.grid }, 
-          horzLines: { color: CHART_COLORS.grid } 
+          vertLines: { color: gridColor }, 
+          horzLines: { color: gridColor } 
         },
         crosshair: { 
           mode: 0, 
-          vertLine: { color: '#00D4FF55', labelBackgroundColor: '#131B2E' }, 
-          horzLine: { color: '#00D4FF55', labelBackgroundColor: '#131B2E' } 
+          vertLine: { color: `${brandColor}55`, labelBackgroundColor: tooltipBg }, 
+          horzLine: { color: `${brandColor}55`, labelBackgroundColor: tooltipBg } 
         },
         timeScale: { 
-          borderColor: CHART_COLORS.border, 
+          borderColor: gridColor, 
           timeVisible: true, 
           secondsVisible: false, 
           fixLeftEdge: true 
         },
         rightPriceScale: { 
-          borderColor: CHART_COLORS.border, 
+          borderColor: gridColor, 
           scaleMargins: { top: 0.1, bottom: 0.2 } 
         },
         width,
@@ -168,7 +181,7 @@ function MainChart({ data, chartType, overlays, height = 540 }: Props) {
     } catch (err) {
       console.error('Error creating chart:', err);
     }
-  }, [data, chartType, overlays, height]);
+  }, [data, chartType, overlays, height, theme, accentColor]);
 
   return <div ref={containerRef} className="w-full" style={{ height }} />;
 }

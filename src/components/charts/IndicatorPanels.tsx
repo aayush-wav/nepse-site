@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ReferenceLine, ComposedChart, Cell,
@@ -9,9 +9,9 @@ import {
 } from '../../utils/indicators';
 
 const CHART_THEME = {
-  bg: '#0A0F1E',
-  grid: '#1A2240',
-  text: '#4A5880',
+  bg: 'var(--bg-surface)',
+  grid: 'var(--bg-border)',
+  text: 'var(--text-secondary)',
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {

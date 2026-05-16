@@ -53,3 +53,6 @@ export const useFloorsheet = () =>
 
 export const useCompanyFloorsheet = (symbol: string) =>
   useQuery({ queryKey: ["floorsheet", symbol], queryFn: () => nepseApi.getCompanyFloorsheet(symbol), staleTime: SLOW_STALE, enabled: !!symbol });
+
+export const useNews = () =>
+  useQuery({ queryKey: ["news"], queryFn: nepseApi.getNews, staleTime: 60 * 1000, refetchInterval: 60 * 1000 });

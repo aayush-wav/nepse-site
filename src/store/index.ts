@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Watchlist, Alert, PortfolioHolding, Transaction } from '../types';
 interface MarketState {
@@ -168,12 +168,18 @@ export const useAlertStore = create<AlertState>()(
 interface UIState {
   sidebarOpen: boolean;
   searchOpen: boolean;
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'system';
+  accentColor: string;
+  compactMode: boolean;
   calendarMode: 'BS' | 'AD' | 'both';
   numberFormat: 'nepali' | 'international';
   toggleSidebar: () => void;
   toggleSearch: () => void;
-  setTheme: (theme: 'dark' | 'light') => void;
+  setTheme: (theme: 'dark' | 'light' | 'system') => void;
+  setAccentColor: (color: string) => void;
+  setCompactMode: (isCompact: boolean) => void;
+  setCalendarMode: (mode: 'BS' | 'AD' | 'both') => void;
+  setNumberFormat: (format: 'nepali' | 'international') => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -181,12 +187,18 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       sidebarOpen: true,
       searchOpen: false,
-      theme: 'dark',
+      theme: 'system',
+      accentColor: '#00D4FF',
+      compactMode: false,
       calendarMode: 'BS',
       numberFormat: 'nepali',
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
       toggleSearch: () => set((s) => ({ searchOpen: !s.searchOpen })),
       setTheme: (theme) => set({ theme }),
+      setAccentColor: (accentColor) => set({ accentColor }),
+      setCompactMode: (compactMode) => set({ compactMode }),
+      setCalendarMode: (calendarMode) => set({ calendarMode }),
+      setNumberFormat: (numberFormat) => set({ numberFormat }),
     }),
     { name: 'nepse-ui' }
   )
