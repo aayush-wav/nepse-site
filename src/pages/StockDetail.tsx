@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { DrawingRef } from '../components/charts/CandlestickChart';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -19,44 +20,48 @@ import CandlestickChart from '../components/charts/CandlestickChart';
 
 import TechnicalGauge from '../components/shared/TechnicalGauge';
 
-// Tab Components (to be implemented)
+const DRAW_TOOLS = [
+  { id: 'none', label: 'None', icon: '🖱️' },
+  { id: 'trendline', label: 'Trendline', icon: '📐' },
+  { id: 'hline', label: 'Horiz. Line', icon: '➖' },
+  { id: 'fib', label: 'Fibonacci', icon: '🌀' },
+  { id: 'rect', label: 'Rectangle', icon: '⬜' },
+];
+
+const INDICATOR_LIST = [
+  { id: 'sma20', label: 'SMA 20' },
+  { id: 'sma50', label: 'SMA 50' },
+  { id: 'ema9', label: 'EMA 9' },
+  { id: 'bb', label: 'Bollinger Bands' },
+  { id: 'vwap', label: 'VWAP' },
+];
+
 const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
-  const [timeframe, setTimeframe] = useState('1M');
+  const [timeframe, setTimeframe] = useState('3M');
+  const [drawTool, setDrawToolState] = useState<string>('none');
+  const [showDrawMenu, setShowDrawMenu] = useState(false);
+  const [showIndMenu, setShowIndMenu] = useState(false);
+  const [activeInds, setActiveInds] = useState<string[]>([]);
+  const chartRef = useRef<DrawingRef>(null);
+
+  const setDrawTool = (tool: string) => {
+    setDrawToolState(tool);
+    chartRef.current?.setDrawMode(tool);
+  };
+
+  const clearDrawings = () => {
+    chartRef.current?.clearDrawings();
+  };
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
-    // Find the latest date in the dataset (time is in seconds for lightweight-charts)
     const latestTime = data.reduce((max, d) => {
       const ts = typeof d.time === 'number' ? d.time * 1000 : new Date(d.time || d.date).getTime();
       return Math.max(max, ts);
     }, 0);
-    
     const latestDate = new Date(latestTime || Date.now());
     let cutoff = new Date(latestDate.getTime());
-    
     switch (timeframe) {
-      case '1D': 
-        // We only have daily historical data from the API.
-        // For 1D, we generate a synthetic intraday chart to demonstrate functionality.
-        if (data.length === 0) return [];
-        const latest = data[data.length - 1];
-        const intraday = [];
-        let curr = latest.open || latest.close;
-        const vol = latest.high - latest.low || curr * 0.01;
-        for (let i = 0; i < 60; i++) { // 60 minutes of data
-          const open = curr;
-          const close = open + (Math.random() - 0.5) * vol * 0.5;
-          const high = Math.max(open, close) + Math.random() * vol * 0.2;
-          const low = Math.min(open, close) - Math.random() * vol * 0.2;
-          curr = close;
-          intraday.push({
-            time: latest.time - (60 - i) * 60, // past 60 mins
-            open, high, low, close,
-            volume: Math.floor(Math.random() * 1000)
-          });
-        }
-        return intraday;
       case '1W': cutoff.setDate(latestDate.getDate() - 7); break;
       case '1M': cutoff.setMonth(latestDate.getMonth() - 1); break;
       case '3M': cutoff.setMonth(latestDate.getMonth() - 3); break;
@@ -66,34 +71,99 @@ const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
       case 'All': return data;
       default: return data;
     }
-    
     return data.filter(d => {
       const ts = typeof d.time === 'number' ? d.time * 1000 : new Date(d.time || d.date).getTime();
       return ts >= cutoff.getTime();
     });
   }, [data, timeframe]);
 
+  const toggleInd = (id: string) =>
+    setActiveInds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex gap-2">
-          {['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'All'].map(tf => (
-            <button 
-              key={tf} 
-              onClick={() => setTimeframe(tf)}
-              className={`px-3 py-1 text-xs rounded border transition-colors ${timeframe === tf ? 'bg-brand-cyan text-bg-base border-brand-cyan' : 'border-bg-border text-text-secondary hover:bg-bg-elevated'}`}
-            >
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1">
+          {['1W', '1M', '3M', '6M', '1Y', '5Y', 'All'].map(tf => (
+            <button key={tf} onClick={() => setTimeframe(tf)}
+              className={`px-2.5 py-1 text-xs rounded font-bold transition-all ${timeframe === tf ? 'bg-brand-cyan text-bg-base' : 'border border-bg-border text-text-secondary hover:bg-bg-elevated'}`}>
               {tf}
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <button className="btn-secondary py-1 px-3 text-xs">Indicators</button>
-          <button className="btn-secondary py-1 px-3 text-xs">Draw</button>
+        <div className="flex gap-2 relative">
+          {/* Indicators dropdown */}
+          <div className="relative">
+            <button onClick={() => { setShowIndMenu(v => !v); setShowDrawMenu(false); }}
+              className={`btn-secondary py-1 px-3 text-xs flex items-center gap-1.5 ${activeInds.length > 0 ? 'text-brand-cyan border-brand-cyan/50' : ''}`}>
+              📊 Indicators {activeInds.length > 0 && <span className="bg-brand-cyan text-bg-base text-[9px] font-black px-1 rounded-full">{activeInds.length}</span>}
+            </button>
+            {showIndMenu && (
+              <div className="absolute right-0 top-full mt-1 w-44 card border-bg-border shadow-xl z-50 p-2 space-y-1">
+                {INDICATOR_LIST.map(ind => (
+                  <button key={ind.id} onClick={() => toggleInd(ind.id)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bg-elevated transition-colors text-left">
+                    <div className={`w-3 h-3 rounded border-2 flex items-center justify-center ${activeInds.includes(ind.id) ? 'bg-brand-cyan border-brand-cyan' : 'border-bg-border'}`}>
+                      {activeInds.includes(ind.id) && <span className="text-[7px] text-bg-base font-bold">✓</span>}
+                    </div>
+                    <span className="text-xs text-text-secondary">{ind.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Draw tools dropdown */}
+          <div className="relative">
+            <button onClick={() => { setShowDrawMenu(v => !v); setShowIndMenu(false); }}
+              className={`btn-secondary py-1 px-3 text-xs flex items-center gap-1.5 ${drawTool !== 'none' ? 'text-brand-gold border-brand-gold/50' : ''}`}>
+              ✏️ {DRAW_TOOLS.find(t => t.id === drawTool)?.label || 'Draw'}
+            </button>
+            {showDrawMenu && (
+              <div className="absolute right-0 top-full mt-1 w-52 card border-bg-border shadow-xl z-50 p-2 space-y-1">
+                {DRAW_TOOLS.map(tool => (
+                  <button key={tool.id} onClick={() => { setDrawTool(tool.id); setShowDrawMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bg-elevated transition-colors text-left ${drawTool === tool.id ? 'text-brand-gold' : 'text-text-secondary'}`}>
+                    <span className="text-sm">{tool.icon}</span>
+                    <span className="text-xs">{tool.label}</span>
+                    {drawTool === tool.id && <span className="ml-auto text-[9px] text-brand-gold font-bold">ACTIVE</span>}
+                  </button>
+                ))}
+                {drawTool !== 'none' && (
+                  <button onClick={() => { clearDrawings(); setShowDrawMenu(false); }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bear-red/10 text-bear-red text-left mt-1 border-t border-bg-border/50 pt-2">
+                    <span className="text-xs">🗑 Clear all drawings</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      {drawTool !== 'none' && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-brand-gold/10 border border-brand-gold/30 rounded-lg text-xs text-brand-gold">
+          <span className="font-bold">DRAW MODE:</span>
+          <span>{DRAW_TOOLS.find(t => t.id === drawTool)?.label}</span>
+          <span className="text-text-muted">—</span>
+          <span className="text-text-muted">
+            {drawTool === 'trendline' ? 'Click 2 points on chart' :
+             drawTool === 'hline' ? 'Click any price level' :
+             drawTool === 'fib' ? 'Click swing high, then swing low' :
+             'Click top-left, then bottom-right'}
+          </span>
+          <button onClick={clearDrawings} className="px-2 py-0.5 rounded text-[10px] bg-bg-elevated text-text-muted hover:text-bear-red transition-colors">Clear</button>
+          <button onClick={() => setDrawTool('none')} className="ml-1 text-text-muted hover:text-bear-red transition-colors font-bold">✕ Exit</button>
+        </div>
+      )}
       <div className="h-[500px] border border-bg-border/30 rounded-xl overflow-hidden bg-bg-base/30">
-        <CandlestickChart data={filteredData} />
+        {filteredData.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-text-muted">
+            <span className="text-4xl opacity-30">📊</span>
+            <p className="text-sm">No chart data available for {symbol}</p>
+            <p className="text-xs opacity-60">Data loads from the NEPSE API — try switching timeframes</p>
+          </div>
+        ) : (
+          <CandlestickChart ref={chartRef} data={filteredData} />
+        )}
       </div>
     </div>
   );
@@ -190,9 +260,41 @@ const FloorsheetTab = ({ symbol }: { symbol: string }) => {
     </div>
   );
 };
+// Embedded broker name map matching backend BROKER_MAP
+const BROKER_NAMES: Record<string, string> = {
+  "1": "Kumari Securities", "2": "Orchid Securities", "3": "Arun Securities",
+  "4": "Opal Securities", "5": "Market Securities", "6": "Agrawal Securities",
+  "7": "J.F. Securities", "8": "Ashutosh Brokerage", "9": "Sani Securities",
+  "10": "Pragyan Securities", "11": "Malla & Malla", "12": "Sumeru Securities",
+  "13": "Thrive Brokerage", "14": "Nepal Stock House", "15": "Apollo Securities",
+  "16": "Primo Securities", "17": "ABC Securities", "18": "Sagarmatha Securities",
+  "19": "Nepal Investment Securities", "20": "Siwani Securities",
+  "21": "Trishakti Securities", "22": "Sibani Securities", "23": "Dibya Securities",
+  "24": "Naasa Securities (Old)", "25": "Shweta Securities", "26": "Asian Securities",
+  "28": "Shree Krishna Securities", "29": "South Asian Securities",
+  "31": "Mohini Securities", "32": "Premier Securities", "33": "Dakshinkali Securities",
+  "34": "Vision Securities", "35": "Kohinoor Securities", "36": "Secured Securities",
+  "37": "Swarnalaxmi Securities", "38": "Deepshikha Securities", "39": "Sumeru Securities",
+  "40": "Creative Securities", "41": "Linclon Securities", "42": "Sani Securities",
+  "43": "South Asian Securities", "44": "Dynamic Advisory", "45": "Imperial Securities",
+  "46": "Kalika Securities", "47": "Nivansar Capital", "48": "Trishakti Securities",
+  "49": "Online Securities", "50": "Crystal Securities", "51": "Oxford Securities",
+  "52": "Srijana Securities", "53": "Investment Management", "54": "Sewa Securities",
+  "55": "Bhrikuti Stock", "56": "Sri Hari Securities", "57": "Aryatara Investment",
+  "58": "Naasa Securities", "59": "Dipshikha Securities", "60": "Bhole Ganesh",
+  "61": "Capital Max", "62": "Himalayan Brokerage", "63": "Sunil Securities",
+  "64": "Sajilo Broker", "65": "Sharepro Securities", "66": "NMB Securities",
+  "67": "KBL Securities", "68": "NIC Asia Securities", "69": "Nabil Stock",
+  "70": "Sanima Securities", "71": "Prabhu Stock", "72": "Citizen Stock",
+  "73": "Himalayan Capital", "74": "Global IME Securities", "75": "Mega Stock",
+  "76": "Kumari Stock", "77": "Laxmi Sunrise Securities", "78": "Machhapuchhre Securities",
+  "79": "Garima Securities", "80": "Muktinath Securities", "81": "Jyoti Capital",
+  "82": "Siddhartha Capital", "83": "Agricultural Dev Bank", "84": "Nepal Bank Limited",
+  "85": "Rastriya Banijya Bank"
+};
+
 const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
   const { data: floorsheetData, isLoading: loadingFloorsheet } = useCompanyFloorsheet(symbol);
-  const { data: brokers, isLoading: loadingBrokers } = useBrokers();
   const { setSelectedBrokerId } = useUIStore();
   const [search, setSearch] = useState('');
   
@@ -200,10 +302,6 @@ const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
     if (!floorsheetData) return [];
     
     const stats: Record<string, { id: string, name: string, buy: number, sell: number, buyQty: number, sellQty: number }> = {};
-    const brokerMap: Record<string, string> = {};
-    if (brokers) {
-      brokers.forEach((b: any) => brokerMap[b.id] = b.name);
-    }
     
     floorsheetData.forEach((t: any) => {
       const bid = t.buyerMemberId;
@@ -211,8 +309,8 @@ const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
       const amount = (t.contractQuantity || 0) * (t.contractRate || 0);
       const qty = t.contractQuantity || 0;
       
-      if (!stats[bid]) stats[bid] = { id: bid, name: brokerMap[bid] || 'Unknown', buy: 0, sell: 0, buyQty: 0, sellQty: 0 };
-      if (!stats[sid]) stats[sid] = { id: sid, name: brokerMap[sid] || 'Unknown', buy: 0, sell: 0, buyQty: 0, sellQty: 0 };
+      if (!stats[bid]) stats[bid] = { id: bid, name: BROKER_NAMES[String(bid)] || `Broker #${bid}`, buy: 0, sell: 0, buyQty: 0, sellQty: 0 };
+      if (!stats[sid]) stats[sid] = { id: sid, name: BROKER_NAMES[String(sid)] || `Broker #${sid}`, buy: 0, sell: 0, buyQty: 0, sellQty: 0 };
       
       stats[bid].buy += amount;
       stats[bid].buyQty += qty;
@@ -222,7 +320,7 @@ const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
     
     return Object.values(stats)
       .sort((a, b) => (b.buy + b.sell) - (a.buy + a.sell));
-  }, [floorsheetData, brokers]);
+  }, [floorsheetData]);
 
   const filteredStats = useMemo(() => {
     const s = search.toLowerCase();
@@ -232,7 +330,8 @@ const BrokerActivityTab = ({ symbol }: { symbol: string }) => {
     );
   }, [brokerStats, search]);
 
-  if (loadingFloorsheet || loadingBrokers) return <div className="p-8 text-center text-text-muted italic">Processing real-time broker activity...</div>;
+  if (loadingFloorsheet) return <div className="p-8 text-center text-text-muted italic">Processing real-time broker activity...</div>;
+  if (!floorsheetData || floorsheetData.length === 0) return <div className="p-8 text-center text-text-muted italic">No floorsheet data found for {symbol} today. Market may be closed or no trades yet.</div>;
 
   const totalBuy = filteredStats.reduce((acc, b) => acc + b.buy, 0);
   const totalSell = filteredStats.reduce((acc, b) => acc + b.sell, 0);
@@ -547,7 +646,6 @@ export default function StockDetail() {
         volume: d.totalTradedQuantity ?? d.volume ?? 0,
       };
     });
-    chartData = [];
   }
 
   if (!stock.ltp && !loadingPrice) return <div className="p-8 text-center text-text-secondary">Stock {symbol} not found or no data available.</div>;

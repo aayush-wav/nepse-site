@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef, memo, forwardRef, useImperativeHandle } from 'react';
 import { 
   createChart, 
   ColorType, 
@@ -11,6 +11,11 @@ import {
 import type { OHLCVBar } from '../../utils/indicators';
 import { calcSMA, calcEMA, calcBollingerBands, calcHeikinAshi, calcVWAP } from '../../utils/indicators';
 import { useUIStore } from '../../store';
+
+export interface DrawingRef {
+  setDrawMode: (mode: string) => void;
+  clearDrawings: () => void;
+}
 
 export type ChartType = 'candlestick' | 'heikin-ashi' | 'line' | 'area' | 'bar';
 export interface Overlay { id: string; label: string; color: string; enabled: boolean; }
@@ -32,12 +37,36 @@ const CHART_COLORS = {
   wick: { up: '#00C48C', down: '#FF4D4F' },
 };
 
-function MainChart({ data, chartType, overlays, height = 540 }: Props) {
+const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
+  { data, chartType, overlays, height = 540 },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
   const helperSeriesRef = useRef<Map<string, any>>(new Map());
   const { theme, accentColor } = useUIStore();
+
+  const drawModeRef = useRef<string>('none');
+  const clickPointRef = useRef<{ price: number; time: number } | null>(null);
+  const drawnLinesRef = useRef<any[]>([]);
+
+  useImperativeHandle(ref, () => ({
+    setDrawMode: (mode: string) => {
+      drawModeRef.current = mode;
+      clickPointRef.current = null;
+      if (containerRef.current) {
+        containerRef.current.style.cursor = mode !== 'none' ? 'crosshair' : 'default';
+      }
+    },
+    clearDrawings: () => {
+      drawnLinesRef.current.forEach(line => {
+        try { seriesRef.current?.removePriceLine(line); } catch {}
+      });
+      drawnLinesRef.current = [];
+      clickPointRef.current = null;
+    },
+  }));
 
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
@@ -168,6 +197,90 @@ function MainChart({ data, chartType, overlays, height = 540 }: Props) {
       chartRef.current = chart;
       chart.timeScale().fitContent();
 
+      // Drawing Tool Click Handler
+      chart.subscribeClick((param: any) => {
+        const mode = drawModeRef.current;
+        if (mode === 'none' || !param.point || !seriesRef.current) return;
+
+        const price = seriesRef.current.coordinateToPrice(param.point.y);
+        if (price === null) return;
+
+        if (mode === 'hline') {
+          const line = seriesRef.current.createPriceLine({
+            price,
+            color: '#F5A623',
+            lineWidth: 1,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: `H: ${price.toFixed(2)}`,
+          });
+          drawnLinesRef.current.push(line);
+        } else if (mode === 'trendline' || mode === 'fib') {
+          if (!clickPointRef.current) {
+            clickPointRef.current = { price, time: param.time };
+            const marker = seriesRef.current.createPriceLine({
+              price,
+              color: '#00D4FF',
+              lineWidth: 1,
+              lineStyle: 2,
+              axisLabelVisible: true,
+              title: mode === 'fib' ? 'Fib Start' : 'Start',
+            });
+            drawnLinesRef.current.push(marker);
+          } else {
+            const firstPrice = clickPointRef.current.price;
+            if (mode === 'trendline') {
+              const lineA = seriesRef.current.createPriceLine({
+                price: firstPrice, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Trend A',
+              });
+              const lineB = seriesRef.current.createPriceLine({
+                price, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Trend B',
+              });
+              drawnLinesRef.current.push(lineA, lineB);
+            } else if (mode === 'fib') {
+              const high = Math.max(firstPrice, price);
+              const low = Math.min(firstPrice, price);
+              const diff = high - low;
+              const levels = [
+                { ratio: 0, label: '0%', color: '#FF4D4F' },
+                { ratio: 0.236, label: '23.6%', color: '#F5A623' },
+                { ratio: 0.382, label: '38.2%', color: '#00C48C' },
+                { ratio: 0.5, label: '50%', color: '#00D4FF' },
+                { ratio: 0.618, label: '61.8%', color: '#00C48C' },
+                { ratio: 0.786, label: '78.6%', color: '#F5A623' },
+                { ratio: 1, label: '100%', color: '#FF4D4F' },
+              ];
+              levels.forEach(({ ratio, label, color }) => {
+                const lvlPrice = high - diff * ratio;
+                const line = seriesRef.current.createPriceLine({
+                  price: lvlPrice, color, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: `Fib ${label}`,
+                });
+                drawnLinesRef.current.push(line);
+              });
+            }
+            clickPointRef.current = null;
+          }
+        } else if (mode === 'rect') {
+          if (!clickPointRef.current) {
+            clickPointRef.current = { price, time: param.time };
+            const top = seriesRef.current.createPriceLine({
+              price, color: '#00D4FF', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'Rect Top',
+            });
+            drawnLinesRef.current.push(top);
+          } else {
+            const firstPrice = clickPointRef.current.price;
+            const bottom = seriesRef.current.createPriceLine({
+              price, color: '#00D4FF', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Rect Bot',
+            });
+            const top2 = seriesRef.current.createPriceLine({
+              price: firstPrice, color: '#00D4FF', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Rect Top',
+            });
+            drawnLinesRef.current.push(bottom, top2);
+            clickPointRef.current = null;
+          }
+        }
+      });
+
       const handleResize = () => {
         if (containerRef.current) {
           chart.applyOptions({ width: containerRef.current.clientWidth });
@@ -184,6 +297,6 @@ function MainChart({ data, chartType, overlays, height = 540 }: Props) {
   }, [data, chartType, overlays, height, theme, accentColor]);
 
   return <div ref={containerRef} className="w-full" style={{ height }} />;
-}
+});
 
 export default memo(MainChart);

@@ -4,6 +4,9 @@ from cache import cache
 
 router = APIRouter(prefix="/api/market", tags=["market"])
 
+TTL_LIVE = 15
+TTL_MEDIUM = 60
+
 @router.get("/live")
 def get_live_trading():
     cached = cache.get("live_trading")
@@ -11,7 +14,7 @@ def get_live_trading():
         return {"status": "ok", "source": "cache", "data": cached}
     data = nepse_client.get_live_trading()
     if data:
-        cache.set("live_trading", data, 60)
+        cache.set("live_trading", data, TTL_LIVE)
     return {"status": "ok", "source": "live", "data": data or []}
 
 @router.get("/gainers")
@@ -21,7 +24,7 @@ def get_top_gainers():
         return {"status": "ok", "data": cached}
     data = nepse_client.get_top_gainers()
     if data:
-        cache.set("top_gainers", data, 60)
+        cache.set("top_gainers", data, TTL_LIVE)
     return {"status": "ok", "data": data or []}
 
 @router.get("/losers")
@@ -31,7 +34,7 @@ def get_top_losers():
         return {"status": "ok", "data": cached}
     data = nepse_client.get_top_losers()
     if data:
-        cache.set("top_losers", data, 60)
+        cache.set("top_losers", data, TTL_LIVE)
     return {"status": "ok", "data": data or []}
 
 @router.get("/turnover")
@@ -41,7 +44,7 @@ def get_top_turnover():
         return {"status": "ok", "data": cached}
     data = nepse_client.get_top_turnover()
     if data:
-        cache.set("top_turnover", data, 60)
+        cache.set("top_turnover", data, TTL_LIVE)
     return {"status": "ok", "data": data or []}
 
 @router.get("/volume")
@@ -51,7 +54,7 @@ def get_top_volume():
         return {"status": "ok", "data": cached}
     data = nepse_client.get_top_volume()
     if data:
-        cache.set("top_volume", data, 60)
+        cache.set("top_volume", data, TTL_LIVE)
     return {"status": "ok", "data": data or []}
 
 @router.get("/transactions")
@@ -61,7 +64,7 @@ def get_top_transactions():
         return {"status": "ok", "data": cached}
     data = nepse_client.get_top_transaction()
     if data:
-        cache.set("top_transactions", data, 60)
+        cache.set("top_transactions", data, TTL_LIVE)
     return {"status": "ok", "data": data or []}
 
 @router.get("/status")
@@ -76,5 +79,5 @@ def get_market_summary():
         return {"status": "ok", "source": "cache", "data": cached}
     data = nepse_client.get_market_summary()
     if data:
-        cache.set("market_summary", data, 120)
+        cache.set("market_summary", data, TTL_MEDIUM)
     return {"status": "ok", "source": "live", "data": data or {}}

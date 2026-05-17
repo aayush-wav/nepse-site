@@ -11,7 +11,7 @@ logger = logging.getLogger("news_scraper")
 # Cache to store news so we don't spam the website
 _news_cache = []
 _last_fetch_time = 0
-CACHE_TTL = 300  # 5 minutes
+CACHE_TTL = 120  # 2 minutes
 
 def fetch_sharesansar_news():
     try:
@@ -37,9 +37,9 @@ def fetch_sharesansar_news():
                 headline_elem = block.find('h4', class_='featured-news-title')
                 date_elem = block.find('span', class_='text-org')
                 
-                if headline_elem and headline_elem.a:
-                    headline = headline_elem.a.text.strip()
-                    link = headline_elem.a['href']
+                if headline_elem and headline_elem.parent.name == 'a':
+                    headline = headline_elem.text.strip()
+                    link = headline_elem.parent.get('href', '')
                     date_str = date_elem.text.strip() if date_elem else datetime.now().strftime("%Y-%m-%d")
                     
                     # Sentiment heuristic (basic)

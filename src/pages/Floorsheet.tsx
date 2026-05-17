@@ -13,6 +13,12 @@ export default function Floorsheet() {
   const [search, setSearch] = useState('');
   const [brokerFilter, setBrokerFilter] = useState('');
   const [minQty, setMinQty] = useState('');
+  const [displayCount, setDisplayCount] = useState(100);
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(100);
+  }, [search, brokerFilter, minQty]);
 
   const filtered = data.filter(item => {
     const symbolMatch = item.stockSymbol.toLowerCase().includes(search.toLowerCase());
@@ -27,6 +33,8 @@ export default function Floorsheet() {
     qty: acc.qty + curr.contractQuantity,
     amount: acc.amount + (curr.contractQuantity * curr.contractRate)
   }), { qty: 0, amount: 0 });
+
+  const displayedData = filtered.slice(0, displayCount);
 
   return (
     <div className="space-y-4">
@@ -112,7 +120,7 @@ export default function Floorsheet() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
+              {displayedData.map((item) => (
                 <tr key={item.contractId} className="border-b border-bg-border/30 hover:bg-bg-elevated/50 transition-colors table-row-zebra">
                   <td className="table-cell font-jetbrains text-xs text-text-muted">#{item.contractId}</td>
                   <td className="table-cell font-jetbrains text-xs text-text-secondary">{item.contractTime}</td>
@@ -145,6 +153,18 @@ export default function Floorsheet() {
             </tbody>
           </table>
         </div>
+        
+        {filtered.length > displayCount && !isLoading && (
+          <div className="p-4 border-t border-bg-border/30 flex justify-center">
+            <button 
+              onClick={() => setDisplayCount(prev => prev + 200)}
+              className="btn-secondary py-2 px-6 text-sm"
+            >
+              Load More ({filtered.length - displayCount} remaining)
+            </button>
+          </div>
+        )}
+
         {isLoading && (
           <div className="p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-brand-cyan border-t-transparent" />

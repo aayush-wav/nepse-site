@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ChevronDown, Maximize2, Minimize2,
   TrendingUp, BarChart2, X, RotateCcw, Loader2,
   ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
-import MainChart, { type ChartType, type Overlay } from '../components/charts/MainChart';
+import MainChart, { type ChartType, type Overlay, type DrawingRef } from '../components/charts/MainChart';
 import {
   RSIPanel, MACDPanel, StochasticPanel, ATRPanel,
   OBVPanel, WilliamsRPanel, VolumePanel,
@@ -75,6 +75,25 @@ export default function AdvancedCharts() {
   const [activeIndicators, setActiveIndicators] = useState<IndicatorId[]>(['volume', 'rsi']);
   const [showIndicatorMenu, setShowIndicatorMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [drawToolState, setDrawToolState] = useState('none');
+  const [showDrawMenu, setShowDrawMenu] = useState(false);
+  const chartRef = useRef<DrawingRef>(null);
+
+  const setDrawTool = (tool: string) => {
+    setDrawToolState(tool);
+    chartRef.current?.setDrawMode(tool);
+  };
+
+  const clearDrawings = () => {
+    chartRef.current?.clearDrawings();
+  };
+  const DRAW_TOOLS_AC = [
+    { id: 'none', label: 'Pointer', icon: '🖱️' },
+    { id: 'trendline', label: 'Trendline', icon: '📐' },
+    { id: 'hline', label: 'Horiz. Line', icon: '➖' },
+    { id: 'fib', label: 'Fibonacci', icon: '🌀' },
+    { id: 'rect', label: 'Rectangle', icon: '⬜' },
+  ];
   const { data: companyList, isLoading: loadingCompanies } = useCompanyList();
   const { data: chartGraphData, isLoading: loadingChart } = useStockChart(symbol);
   const { data: livePriceData } = useStockPrice(symbol);
@@ -343,11 +362,44 @@ export default function AdvancedCharts() {
           </AnimatePresence>
         </div>
 
+        {/* Draw Tools */}
+        <div className="relative">
+          <button onClick={() => setShowDrawMenu(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-bg-elevated transition-colors ${
+              drawToolState !== 'none' ? 'text-brand-gold' : 'text-text-secondary hover:text-text-primary'
+            }`}>
+            ✏️ {DRAW_TOOLS_AC.find(t => t.id === drawToolState)?.label || 'Draw'}
+          </button>
+          <AnimatePresence>
+            {showDrawMenu && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                className="absolute top-full left-0 mt-1 w-44 card border-bg-border shadow-xl z-50 p-2 space-y-1">
+                {DRAW_TOOLS_AC.map(tool => (
+                  <button key={tool.id} onClick={() => { setDrawTool(tool.id); setShowDrawMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bg-elevated transition-colors ${
+                      drawToolState === tool.id ? 'text-brand-gold' : 'text-text-secondary'
+                    }`}>
+                    <span>{tool.icon}</span>
+                    <span className="text-xs">{tool.label}</span>
+                    {drawToolState === tool.id && <span className="ml-auto text-[9px] font-bold text-brand-gold">ON</span>}
+                  </button>
+                ))}
+                {drawToolState !== 'none' && (
+                  <button onClick={() => { clearDrawings(); setShowDrawMenu(false); }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bear-red/10 text-bear-red text-left mt-1 border-t border-bg-border/50 pt-2">
+                    <span className="text-xs">🗑 Clear all drawings</span>
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         <div className="ml-auto flex items-center gap-2">
-          {(apiChartData && apiChartData.length > 0) && (
+          {chartData.length > 0 && (
             <span className="text-[10px] text-bull-green font-bold px-2 py-0.5 rounded bg-bull-green/10 border border-bull-green/20">● LIVE DATA</span>
           )}
-          {!(apiChartData && apiChartData.length > 0) && (
+          {chartData.length === 0 && (
             <span className="text-[10px] text-text-muted font-bold px-2 py-0.5 rounded bg-bg-elevated border border-bg-border">NO CHART DATA</span>
           )}
           <button onClick={() => setIsFullscreen(v => !v)}
@@ -368,7 +420,7 @@ export default function AdvancedCharts() {
             <Loader2 size={32} className="text-brand-cyan animate-spin" />
           </div>
         )}
-        <MainChart data={chartData} chartType={chartType} overlays={overlays} height={mainHeight} />
+        <MainChart ref={chartRef} data={chartData} chartType={chartType} overlays={overlays} height={mainHeight} />
       </div>
 
       {/* ─── INDICATOR PANELS ────────────────── */}

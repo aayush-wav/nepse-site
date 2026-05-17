@@ -23,7 +23,8 @@ def get_stock_price(symbol: str):
         return {"status": "ok", "source": "cache", "data": cached}
     data = nepse_client.get_company_price_detail(symbol.upper())
     if data:
-        cache.set(cache_key, data, 60)
+        cache.set(cache_key, data, 15)
+    if data:
         return {"status": "ok", "source": "live", "data": data}
     raise HTTPException(status_code=404, detail=f"Price data not found for {symbol}")
 
