@@ -12,6 +12,7 @@ from routes.indices import router as indices_router
 from routes.summary import router as summary_router
 from routes.news import router as news_router
 from routes.brokers import router as brokers_router
+from routes.ipo import router as ipo_router
 from scheduler import start_scheduler
 
 load_dotenv()
@@ -51,9 +52,10 @@ app.add_middleware(
         os.getenv("CORS_ORIGIN", "http://localhost:5174"),
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:4173",  # Vite preview port
     ],
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -65,6 +67,7 @@ app.include_router(indices_router)
 app.include_router(summary_router)
 app.include_router(news_router, prefix="/api/news", tags=["news"])
 app.include_router(brokers_router)
+app.include_router(ipo_router)
 
 @app.get("/health")
 def health_check():

@@ -1,9 +1,45 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PieChart, TrendingUp, TrendingDown, Activity, Banknote, ListFilter, ArrowRight } from 'lucide-react';
+import { PieChart, TrendingUp, TrendingDown, Activity, Banknote, ListFilter, ArrowRight, Loader2 } from 'lucide-react';
 import { formatNPR, formatPercent, getPriceColorClass, formatVolume } from '../utils';
-import { useSectorIndices, useLiveTrading, useCompanyList } from '../hooks/useNepseData';
+import { useSectorIndices, useLiveTrading, useCompanyList, useSectorHistory } from '../hooks/useNepseData';
+
+function SectorSparkline({ sector }: { sector: string }) {
+  const { data, isLoading } = useSectorHistory(sector);
+  
+  if (isLoading) return <div className="h-10 flex items-center justify-center"><Loader2 size={12} className="animate-spin text-text-muted" /></div>;
+  if (!data || data.length < 2) return <div className="h-10 flex items-center justify-center text-[10px] text-text-muted">No history</div>;
+
+  const min = Math.min(...data.map((d: any) => d.value));
+  const max = Math.max(...data.map((d: any) => d.value));
+  const range = max - min;
+  
+  const width = 100;
+  const height = 40;
+  
+  const points = data.map((d: any, i: number) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - (((d.value - min) / range) * height);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const isUp = data[data.length - 1].value >= data[0].value;
+  const color = isUp ? '#00C48C' : '#FF4D4F';
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-10 overflow-visible">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+}
 
 
 export default function SectorAnalysis() {
@@ -65,7 +101,7 @@ export default function SectorAnalysis() {
       let sectorMarketCap = 0;
       let turnover = 0;
       let volume = 0;
-      let topGainer = null;
+      let topGainer: any = null;
       let totalPE = 0;
       let totalEPS = 0;
       let countWithPE = 0;
@@ -126,8 +162,13 @@ export default function SectorAnalysis() {
 
   const totalMarketCap = enrichedSectors.reduce((acc: number, s: any) => acc + (s.totalMarketCap || 0), 0);
   const totalTurnover = enrichedSectors.reduce((acc: number, s: any) => acc + (s.turnover || 0), 0);
-  const leadingSector = [...enrichedSectors].sort((a, b) => (b.totalMarketCap || 0) - (a.totalMarketCap || 0))[0];
-  const leadingWeight = leadingSector && totalMarketCap > 0 ? (leadingSector.totalMarketCap / totalMarketCap) * 100 : 0;
+  
+  // Use turnover if market cap is zero to ensure bars fill correctly
+  const weightMetric = totalMarketCap > 0 ? 'totalMarketCap' : 'turnover';
+  const totalWeightBase = totalMarketCap > 0 ? totalMarketCap : totalTurnover;
+  
+  const leadingSector = [...enrichedSectors].sort((a, b) => (b[weightMetric] || 0) - (a[weightMetric] || 0))[0];
+  const leadingWeight = leadingSector && totalWeightBase > 0 ? (leadingSector[weightMetric] / totalWeightBase) * 100 : 0;
 
   if (loadingSectors || loadingLive || loadingCompanies) {
     return (
@@ -152,9 +193,6 @@ export default function SectorAnalysis() {
           <h1 className="font-syne text-2xl font-bold">Sector Analysis</h1>
           <p className="text-xs text-text-secondary">Comprehensive breakdown of market performance by industry</p>
         </div>
-        <button className="btn-secondary py-1.5 px-4 flex items-center gap-2 text-xs">
-          <ListFilter size={14} /> Compare Sectors
-        </button>
       </div>
 
       {/* Market Composition Card */}
@@ -193,7 +231,7 @@ export default function SectorAnalysis() {
         </div>
         <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-6 w-full relative z-10">
            {enrichedSectors.slice(0, 6).map((s, i) => {
-             const weight = ((s.totalMarketCap || 0) / (totalMarketCap || 1)) * 100;
+             const weight = ((s[weightMetric] || 0) / (totalWeightBase || 1)) * 100;
              return (
                <div key={i} className="space-y-1.5 p-3 rounded-xl hover:bg-bg-elevated/20 transition-colors group">
                  <div className="flex justify-between text-xs">
@@ -269,6 +307,11 @@ export default function SectorAnalysis() {
                   {sector.changePercent > 0 ? '+' : ''}{formatPercent(sector.changePercent)}
                 </div>
               </div>
+            </div>
+
+            <div className="mb-4 bg-bg-base/30 rounded-lg p-2 border border-bg-border/30">
+               <div className="text-[9px] text-text-muted mb-1 uppercase tracking-wider font-bold">30-Day Trend</div>
+               <SectorSparkline sector={sector.name} />
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">

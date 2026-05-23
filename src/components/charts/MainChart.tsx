@@ -6,21 +6,24 @@ import {
   LineSeries, 
   AreaSeries, 
   BarSeries, 
-  HistogramSeries 
+  HistogramSeries,
+  BaselineSeries
 } from 'lightweight-charts';
 import type { OHLCVBar } from '../../utils/indicators';
 import { calcSMA, calcEMA, calcBollingerBands, calcHeikinAshi, calcVWAP } from '../../utils/indicators';
 import { useUIStore } from '../../store';
+import { useChartStore, DrawingLine } from '../../store/chartStore';
 
 export interface DrawingRef {
   setDrawMode: (mode: string) => void;
   clearDrawings: () => void;
 }
 
-export type ChartType = 'candlestick' | 'heikin-ashi' | 'line' | 'area' | 'bar';
+export type ChartType = 'candlestick' | 'heikin-ashi' | 'line' | 'area' | 'bar' | 'baseline' | 'histogram';
 export interface Overlay { id: string; label: string; color: string; enabled: boolean; }
 
 interface Props {
+  symbol: string;
   data: OHLCVBar[];
   chartType: ChartType;
   overlays: Overlay[];
@@ -38,7 +41,7 @@ const CHART_COLORS = {
 };
 
 const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
-  { data, chartType, overlays, height = 540 },
+  { symbol, data, chartType, overlays, height = 540 },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,6 +49,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
   const seriesRef = useRef<any>(null);
   const helperSeriesRef = useRef<Map<string, any>>(new Map());
   const { theme, accentColor } = useUIStore();
+  const { drawings, addDrawing, clearDrawings: clearStoreDrawings } = useChartStore();
 
   const drawModeRef = useRef<string>('none');
   const clickPointRef = useRef<{ price: number; time: number } | null>(null);
@@ -65,6 +69,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
       });
       drawnLinesRef.current = [];
       clickPointRef.current = null;
+      if (symbol) clearStoreDrawings(symbol);
     },
   }));
 
@@ -120,7 +125,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
       let mainSeries: any;
       if (chartType === 'line') {
         mainSeries = chart.addSeries(LineSeries, { color: '#00D4FF', lineWidth: 2 });
-        mainSeries.setData(displayData.map(d => ({ time: d.date, value: d.close })));
+        mainSeries.setData(displayData.map(d => ({ time: d.time as any, value: d.close })));
       } else if (chartType === 'area') {
         mainSeries = chart.addSeries(AreaSeries, { 
           topColor: 'rgba(0,212,255,0.3)', 
@@ -128,10 +133,31 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
           lineColor: '#00D4FF', 
           lineWidth: 2 
         });
-        mainSeries.setData(displayData.map(d => ({ time: d.date, value: d.close })));
+        mainSeries.setData(displayData.map(d => ({ time: d.time as any, value: d.close })));
       } else if (chartType === 'bar') {
         mainSeries = chart.addSeries(BarSeries, { upColor: CHART_COLORS.up, downColor: CHART_COLORS.down });
-        mainSeries.setData(displayData.map(d => ({ time: d.date, open: d.open, high: d.high, low: d.low, close: d.close })));
+        mainSeries.setData(displayData.map(d => ({ time: d.time as any, open: d.open, high: d.high, low: d.low, close: d.close })));
+      } else if (chartType === 'baseline') {
+        const baseValue = displayData.length > 0 ? displayData[0].close : 0;
+        mainSeries = chart.addSeries(BaselineSeries, {
+          baseValue: { type: 'price', price: baseValue },
+          topFillColor1: 'rgba(0, 196, 140, 0.28)',
+          topFillColor2: 'rgba(0, 196, 140, 0.05)',
+          topLineColor: CHART_COLORS.up,
+          bottomFillColor1: 'rgba(255, 77, 79, 0.05)',
+          bottomFillColor2: 'rgba(255, 77, 79, 0.28)',
+          bottomLineColor: CHART_COLORS.down,
+        });
+        mainSeries.setData(displayData.map(d => ({ time: d.time as any, value: d.close })));
+      } else if (chartType === 'histogram') {
+        mainSeries = chart.addSeries(HistogramSeries, {
+          color: '#8B5CF6',
+        });
+        mainSeries.setData(displayData.map(d => ({ 
+          time: d.time as any, 
+          value: d.close, 
+          color: d.close >= d.open ? CHART_COLORS.up : CHART_COLORS.down 
+        })));
       } else {
         mainSeries = chart.addSeries(CandlestickSeries, { 
           upColor: CHART_COLORS.up, 
@@ -140,7 +166,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
           wickUpColor: CHART_COLORS.up, 
           wickDownColor: CHART_COLORS.down 
         });
-        mainSeries.setData(displayData.map(d => ({ time: d.date, open: d.open, high: d.high, low: d.low, close: d.close })));
+        mainSeries.setData(displayData.map(d => ({ time: d.time as any, open: d.open, high: d.high, low: d.low, close: d.close })));
       }
       seriesRef.current = mainSeries;
 
@@ -152,7 +178,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
       });
       volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
       volSeries.setData(displayData.map(d => ({ 
-        time: d.date, 
+        time: d.time as any, 
         value: d.volume, 
         color: d.close >= d.open ? 'rgba(0,196,140,0.35)' : 'rgba(255,77,79,0.35)' 
       })));
@@ -167,7 +193,7 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
           lastValueVisible: false, 
           crosshairMarkerVisible: false 
         });
-        const d2 = data.map((d, i) => vals[i] !== null ? { time: d.date, value: vals[i] as number } : null).filter(Boolean);
+        const d2 = data.map((d, i) => vals[i] !== null ? { time: d.time as any, value: vals[i] as number } : null).filter(Boolean);
         s.setData(d2 as any[]);
         return s;
       };
@@ -186,9 +212,9 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
           const upper = chart.addSeries(LineSeries, { color: 'rgba(138,43,226,0.7)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
           const mid = chart.addSeries(LineSeries, { color: 'rgba(138,43,226,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
           const lower = chart.addSeries(LineSeries, { color: 'rgba(138,43,226,0.7)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-          upper.setData(data.map((d, i) => bb[i].upper !== null ? { time: d.date, value: bb[i].upper as number } : null).filter(Boolean) as any[]);
-          mid.setData(data.map((d, i) => bb[i].middle !== null ? { time: d.date, value: bb[i].middle as number } : null).filter(Boolean) as any[]);
-          lower.setData(data.map((d, i) => bb[i].lower !== null ? { time: d.date, value: bb[i].lower as number } : null).filter(Boolean) as any[]);
+          upper.setData(data.map((d, i) => bb[i].upper !== null ? { time: d.time as any, value: bb[i].upper as number } : null).filter(Boolean) as any[]);
+          mid.setData(data.map((d, i) => bb[i].middle !== null ? { time: d.time as any, value: bb[i].middle as number } : null).filter(Boolean) as any[]);
+          lower.setData(data.map((d, i) => bb[i].lower !== null ? { time: d.time as any, value: bb[i].lower as number } : null).filter(Boolean) as any[]);
           adds.set('bb_upper', upper); adds.set('bb_mid', mid); adds.set('bb_lower', lower);
         }
       });
@@ -196,6 +222,22 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
       helperSeriesRef.current = adds;
       chartRef.current = chart;
       chart.timeScale().fitContent();
+
+      // Load existing drawings
+      const savedDrawings = drawings[symbol] || [];
+      savedDrawings.forEach((config: DrawingLine) => {
+        if (seriesRef.current) {
+          const line = seriesRef.current.createPriceLine({
+            price: config.price,
+            color: config.color,
+            lineWidth: config.lineWidth as any,
+            lineStyle: config.lineStyle as any,
+            axisLabelVisible: true,
+            title: config.title,
+          });
+          drawnLinesRef.current.push(line);
+        }
+      });
 
       // Drawing Tool Click Handler
       chart.subscribeClick((param: any) => {
@@ -206,15 +248,10 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
         if (price === null) return;
 
         if (mode === 'hline') {
-          const line = seriesRef.current.createPriceLine({
-            price,
-            color: '#F5A623',
-            lineWidth: 1,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `H: ${price.toFixed(2)}`,
-          });
+          const config = { price, color: '#F5A623', lineWidth: 1, lineStyle: 0, title: `H: ${price.toFixed(2)}` };
+          const line = seriesRef.current.createPriceLine({ ...config, axisLabelVisible: true } as any);
           drawnLinesRef.current.push(line);
+          addDrawing(symbol, config);
         } else if (mode === 'trendline' || mode === 'fib') {
           if (!clickPointRef.current) {
             clickPointRef.current = { price, time: param.time };
@@ -230,13 +267,12 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
           } else {
             const firstPrice = clickPointRef.current.price;
             if (mode === 'trendline') {
-              const lineA = seriesRef.current.createPriceLine({
-                price: firstPrice, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Trend A',
-              });
-              const lineB = seriesRef.current.createPriceLine({
-                price, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Trend B',
-              });
+              const cA = { price: firstPrice, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, title: 'Trend A' };
+              const cB = { price, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, title: 'Trend B' };
+              const lineA = seriesRef.current.createPriceLine({ ...cA, axisLabelVisible: true } as any);
+              const lineB = seriesRef.current.createPriceLine({ ...cB, axisLabelVisible: true } as any);
               drawnLinesRef.current.push(lineA, lineB);
+              addDrawing(symbol, cA); addDrawing(symbol, cB);
             } else if (mode === 'fib') {
               const high = Math.max(firstPrice, price);
               const low = Math.min(firstPrice, price);
@@ -252,10 +288,10 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
               ];
               levels.forEach(({ ratio, label, color }) => {
                 const lvlPrice = high - diff * ratio;
-                const line = seriesRef.current.createPriceLine({
-                  price: lvlPrice, color, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: `Fib ${label}`,
-                });
+                const config = { price: lvlPrice, color, lineWidth: 1, lineStyle: 1, title: `Fib ${label}` };
+                const line = seriesRef.current.createPriceLine({ ...config, axisLabelVisible: true } as any);
                 drawnLinesRef.current.push(line);
+                addDrawing(symbol, config);
               });
             }
             clickPointRef.current = null;
@@ -269,13 +305,12 @@ const MainChart = forwardRef<DrawingRef, Props>(function MainChart(
             drawnLinesRef.current.push(top);
           } else {
             const firstPrice = clickPointRef.current.price;
-            const bottom = seriesRef.current.createPriceLine({
-              price, color: '#00D4FF', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Rect Bot',
-            });
-            const top2 = seriesRef.current.createPriceLine({
-              price: firstPrice, color: '#00D4FF', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: 'Rect Top',
-            });
+            const cBot = { price, color: '#00D4FF', lineWidth: 1, lineStyle: 0, title: 'Rect Bot' };
+            const cTop = { price: firstPrice, color: '#00D4FF', lineWidth: 1, lineStyle: 0, title: 'Rect Top' };
+            const bottom = seriesRef.current.createPriceLine({ ...cBot, axisLabelVisible: true } as any);
+            const top2 = seriesRef.current.createPriceLine({ ...cTop, axisLabelVisible: true } as any);
             drawnLinesRef.current.push(bottom, top2);
+            addDrawing(symbol, cBot); addDrawing(symbol, cTop);
             clickPointRef.current = null;
           }
         }

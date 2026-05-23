@@ -17,7 +17,16 @@ class NepseClient:
             return result
         except Exception as e:
             logger.error(f"NepseAPI call '{method_name}' failed: {e}")
-            return None
+            try:
+                logger.info("Attempting to reinitialize NepseClient...")
+                self._nepse = Nepse()
+                self._nepse.setTLSVerification(False)
+                method = getattr(self._nepse, method_name)
+                result = method(*args, **kwargs)
+                return result
+            except Exception as e2:
+                logger.error(f"Reinitialization failed: {e2}")
+                return None
 
     # --- MARKET SUMMARY ---
     def get_market_summary(self):
@@ -46,7 +55,15 @@ class NepseClient:
 
     # --- LIVE MARKET ---
     def get_live_trading(self):
-        return self._safe_call("getLiveMarket")
+        data = self._safe_call("getLiveMarket")
+        if not data:
+            logger.info("Live market empty, falling back to price volume (today's price)")
+            data = self._safe_call("getPriceVolume")
+        return data
+
+    def get_supply_demand(self, symbol: str):
+        """Get market depth (Top 5 Buy/Sell orders) for a specific stock."""
+        return self._safe_call("getSupplyDemand", symbol)
 
     def get_top_gainers(self):
         return self._safe_call("getTopGainers")

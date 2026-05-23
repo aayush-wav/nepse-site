@@ -6,6 +6,7 @@ import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 import SearchOverlay from './components/layout/SearchOverlay';
 import BrokerDetailModal from './components/shared/BrokerDetailModal';
+import SaarathiChat from './components/shared/SaarathiChat';
 import Dashboard from './pages/Dashboard';
 import LiveMarket from './pages/LiveMarket';
 import StockDetail from './pages/StockDetail';
@@ -23,9 +24,13 @@ import MutualFunds from './pages/MutualFunds';
 import NewsAlerts from './pages/NewsAlerts';
 import Education from './pages/Education';
 import SettingsPage from './pages/SettingsPage';
+import { useAlertChecker } from './hooks/useAlertChecker';
 
 export default function App() {
   const { sidebarOpen, theme, accentColor, compactMode } = useUIStore();
+  
+  // Initialize background alert checker
+  useAlertChecker();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -107,6 +112,8 @@ export default function App() {
           </Routes>
         </div>
       </main>
+
+      <SaarathiChat />
 
       <Toaster 
         position="top-right"

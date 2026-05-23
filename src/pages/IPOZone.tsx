@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Rocket, Calendar, CheckCircle2, Clock, ExternalLink, Filter, Search, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Rocket, Calendar, CheckCircle2, Clock, ExternalLink, Filter, Search, Info, X, Loader2 } from 'lucide-react';
 import { formatNepaliNumber } from '../utils';
-
-const ipoData: any[] = [];
+import { useIpo } from '../hooks/useNepseData';
 
 export default function IPOZone() {
   const [filter, setFilter] = useState<'all' | 'open' | 'upcoming' | 'closed'>('all');
   const [search, setSearch] = useState('');
+  const { data: ipos, isLoading } = useIpo();
+  
+  const [checkerOpen, setCheckerOpen] = useState(false);
+  const [boid, setBoid] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [checkStatus, setCheckStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [checkResult, setCheckResult] = useState<any>(null);
 
-  const filtered = ipoData.filter(ipo => {
+  const ipoData = ipos || [];
+
+  const filtered = ipoData.filter((ipo: any) => {
     const statusMatch = filter === 'all' || ipo.status === filter;
     const searchMatch = ipo.company.toLowerCase().includes(search.toLowerCase()) || ipo.symbol?.toLowerCase().includes(search.toLowerCase());
     return statusMatch && searchMatch;
@@ -21,6 +29,30 @@ export default function IPOZone() {
       case 'upcoming': return <span className="badge-yellow">Upcoming</span>;
       case 'closed': return <span className="badge-red">Closed</span>;
       default: return null;
+    }
+  };
+
+  const handleCheckAllotment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (boid.length !== 16) {
+      setCheckStatus('error');
+      setCheckResult({ message: 'BOID must be exactly 16 digits' });
+      return;
+    }
+    
+    setCheckStatus('loading');
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/ipo/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ boid, companyId: selectedCompany })
+      });
+      const data = await res.json();
+      setCheckStatus(data.status === 'success' ? 'success' : 'error');
+      setCheckResult(data);
+    } catch (err) {
+      setCheckStatus('error');
+      setCheckResult({ message: 'Failed to connect to server.' });
     }
   };
 
@@ -55,11 +87,11 @@ export default function IPOZone() {
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <h3 className="font-syne font-bold text-lg">Bulk IPO Result Checker</h3>
-            <p className="text-sm text-text-secondary">Check multiple BOIDs at once for all recent IPO results.</p>
+            <h3 className="font-syne font-bold text-lg">IPO Result Checker</h3>
+            <p className="text-sm text-text-secondary">Check your BOID instantly for any recently allotted IPOs.</p>
           </div>
         </div>
-        <button className="btn-primary px-6 py-2.5 whitespace-nowrap">Check Results Now</button>
+        <button onClick={() => setCheckerOpen(true)} className="btn-primary px-6 py-2.5 whitespace-nowrap">Check Results Now</button>
       </motion.div>
 
       {/* IPO Grid */}
@@ -135,10 +167,17 @@ export default function IPOZone() {
         ))}
       </div>
       
-      {filtered.length === 0 && (
+      {filtered.length === 0 && !isLoading && (
         <div className="card p-20 text-center text-text-muted">
           <Rocket size={40} className="mx-auto mb-4 opacity-20" />
           <p>No IPO issues found for this filter.</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="card p-20 text-center text-text-muted">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-cyan mx-auto mb-4"></div>
+          <p>Loading active and upcoming issues...</p>
         </div>
       )}
 
@@ -168,6 +207,95 @@ export default function IPOZone() {
           ))}
         </div>
       </div>
+
+      {/* Result Checker Modal */}
+      <AnimatePresence>
+        {checkerOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setCheckerOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md bg-bg-surface border border-bg-border rounded-xl shadow-2xl p-6"
+            >
+              <button 
+                onClick={() => setCheckerOpen(false)}
+                className="absolute top-4 right-4 text-text-muted hover:text-text-primary"
+              >
+                <X size={20} />
+              </button>
+              
+              <h2 className="font-syne font-bold text-xl mb-1">Check Allotment</h2>
+              <p className="text-xs text-text-muted mb-6">Enter your 16-digit BOID to check IPO results.</p>
+              
+              <form onSubmit={handleCheckAllotment} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Select Company</label>
+                  <select 
+                    className="input-field w-full text-sm py-2" 
+                    required 
+                    value={selectedCompany} 
+                    onChange={e => setSelectedCompany(e.target.value)}
+                  >
+                    <option value="" disabled>Select an IPO...</option>
+                    {ipoData.filter((i:any) => i.status === 'closed').map((ipo: any) => (
+                      <option key={ipo.id} value={ipo.id}>{ipo.company} ({ipo.symbol})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">16-Digit BOID</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. 1301234567890123" 
+                    className="input-field w-full text-sm py-2"
+                    value={boid}
+                    onChange={e => setBoid(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                    required
+                  />
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={checkStatus === 'loading'}
+                  className="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
+                >
+                  {checkStatus === 'loading' ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                  {checkStatus === 'loading' ? 'Checking...' : 'View Result'}
+                </button>
+              </form>
+              
+              {checkStatus !== 'idle' && checkStatus !== 'loading' && checkResult && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className={`mt-6 p-4 rounded-lg border ${
+                    checkResult.allotted 
+                      ? 'bg-bull-green/10 border-bull-green/30' 
+                      : checkStatus === 'error' && !checkResult.allotted
+                        ? 'bg-bear-red/10 border-bear-red/30'
+                        : 'bg-bg-elevated border-bg-border/50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 ${checkResult.allotted ? 'text-bull-green' : 'text-bear-red'}`}>
+                      {checkResult.allotted ? <CheckCircle2 size={20} /> : <Info size={20} />}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold text-sm ${checkResult.allotted ? 'text-bull-green' : 'text-bear-red'}`}>
+                        {checkResult.allotted ? 'Allotment Successful!' : 'Not Allotted'}
+                      </h4>
+                      <p className="text-xs text-text-secondary mt-1">{checkResult.message}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

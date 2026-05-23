@@ -31,8 +31,10 @@ export const nepseApi = {
   getCompanyList: () => apiFetch<any[]>("/api/stocks/list"),
   getStockPrice: (symbol: string) => apiFetch<any>(`/api/stocks/${symbol}/price`),
   getStockDetail: (symbol: string) => apiFetch<any>(`/api/stocks/${symbol}/detail`),
+  getStockDepth: (symbol: string) => apiFetch<any>(`/api/stocks/${symbol}/depth`),
   getStockDailyChart: (symbol: string) => apiFetch<any>(`/api/stocks/${symbol}/chart/daily`),
   getStockChart: (symbol: string) => apiFetch<any>(`/api/stocks/${symbol}/chart`),
+  getScreener: (params: string) => apiFetch<any[]>(`/api/stocks/screener?${params}`),
 
   // Floorsheet
   getFloorsheet: () => apiFetch<any[]>("/api/floorsheet/"),
@@ -43,6 +45,9 @@ export const nepseApi = {
 
   // News
   getNews: () => apiFetch<any[]>("/api/news/"),
+
+  // IPO
+  getIpos: () => apiFetch<any[]>("/api/ipo/"),
 
   // Brokers
   getBrokers: () => apiFetch<any[]>("/api/brokers/"),

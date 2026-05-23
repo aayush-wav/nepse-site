@@ -11,7 +11,7 @@ import { formatNPR, formatPercent, formatVolume, getPriceColorClass, formatNepal
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } }
 };
 const stagger = { visible: { transition: { staggerChildren: 0.07 } } };
 
@@ -138,7 +138,17 @@ export default function Dashboard() {
   const derived = useMemo(() => {
     if (!data) return null;
     const { nepse_index, market_summary, top_gainers, top_losers, top_turnover, top_volume, sector_indices, live_market, events: apiEvents } = data;
-    const nepseIdx = nepse_index?.find((i: any) => i.index === 'NEPSE Index') || { currentValue: 0, change: 0, perChange: 0 };
+    const nepseIdxRaw = nepse_index?.find((i: any) => i.index === 'NEPSE Index') || {};
+    const closeVal = nepseIdxRaw.currentValue ?? nepseIdxRaw.close ?? 0;
+    const prevClose = nepseIdxRaw.previousClose ?? closeVal;
+    const changeVal = nepseIdxRaw.change ?? (closeVal - prevClose);
+    const perChangeVal = nepseIdxRaw.perChange ?? (prevClose > 0 ? (changeVal / prevClose) * 100 : 0);
+    
+    const nepseIdx = { 
+      currentValue: closeVal, 
+      change: changeVal, 
+      perChange: perChangeVal 
+    };
     const summary = market_summary || [];
     const findSummary = (key: string) => {
       const val = summary.find((s: any) => s.detail?.includes(key))?.value || 0;

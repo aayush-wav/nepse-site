@@ -12,8 +12,8 @@ function useIsMarketOpen(): boolean {
   return mins >= 595 && mins < 910; // 9:55 AM to 3:10 PM NPT (slight buffer)
 }
 
-const FAST = 10 * 1000;       // 10s — aggressive live polling
-const MEDIUM = 30 * 1000;     // 30s
+const FAST = 15 * 1000;       // 15s — matches backend scheduler
+const MEDIUM = 45 * 1000;     // 45s
 const SLOW = 2 * 60 * 1000;   // 2min (off-hours)
 const STATIC = 30 * 60 * 1000; // 30min (rarely changes)
 
@@ -29,12 +29,13 @@ function useLiveInterval() {
 
 export const useDashboard = () => {
   const { fast, stale } = useLiveInterval();
-  return useQuery({ queryKey: ["dashboard"], queryFn: nepseApi.getDashboard, staleTime: stale, refetchInterval: fast });
+  // Dashboard is heavy, keep stale slightly longer to avoid unneeded refetches
+  return useQuery({ queryKey: ["dashboard"], queryFn: nepseApi.getDashboard, staleTime: stale * 1.5, refetchInterval: fast, refetchOnWindowFocus: false });
 };
 
 export const useLiveTrading = () => {
   const { fast, stale } = useLiveInterval();
-  return useQuery({ queryKey: ["live-trading"], queryFn: nepseApi.getLiveTrading, staleTime: stale, refetchInterval: fast });
+  return useQuery({ queryKey: ["live-trading"], queryFn: nepseApi.getLiveTrading, staleTime: stale, refetchInterval: fast, refetchOnWindowFocus: false });
 };
 
 export const useTopGainers = () => {
@@ -72,10 +73,27 @@ export const useNepseIndex = () => {
   return useQuery({ queryKey: ["nepse-index"], queryFn: nepseApi.getNepseIndex, staleTime: stale, refetchInterval: fast });
 };
 
-export const useSectorIndices = () => {
-  const { medium, staleMed } = useLiveInterval();
-  return useQuery({ queryKey: ["sector-indices"], queryFn: nepseApi.getSectorIndices, staleTime: staleMed, refetchInterval: medium });
-};
+export function useSectorIndices() {
+  return useQuery({
+    queryKey: ['sector-indices'],
+    queryFn: () => nepseApi.getSectorIndices(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSectorHistory(sector: string) {
+  const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  return useQuery({
+    queryKey: ['sector-history', sector],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/indices/sector-history/${encodeURIComponent(sector)}`);
+      if (!res.ok) throw new Error('Network response was not ok');
+      const data = await res.json();
+      return data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 export const useCompanyList = () =>
   useQuery({ queryKey: ["company-list"], queryFn: nepseApi.getCompanyList, staleTime: STATIC });
@@ -90,14 +108,44 @@ export const useStockDetail = (symbol: string) => {
   return useQuery({ queryKey: ["stock-detail", symbol], queryFn: () => nepseApi.getStockDetail(symbol), staleTime: staleMed, refetchInterval: medium, enabled: !!symbol });
 };
 
+export const useStockDepth = (symbol: string) => {
+  const { fast, stale } = useLiveInterval();
+  return useQuery({ queryKey: ["stock-depth", symbol], queryFn: () => nepseApi.getStockDepth(symbol), staleTime: stale, refetchInterval: fast, enabled: !!symbol });
+};
+
+export const useScreener = (params: any) => {
+  const { medium, staleMed } = useLiveInterval();
+  const queryString = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        value.forEach(v => queryString.append(key, v));
+      } else {
+        queryString.append(key, String(value));
+      }
+    }
+  });
+  return useQuery({ 
+    queryKey: ["screener", params], 
+    queryFn: () => nepseApi.getScreener(queryString.toString()), 
+    staleTime: staleMed, 
+    refetchInterval: medium 
+  });
+};
+
 export const useStockChart = (symbol: string) => {
   const { medium, staleMed } = useLiveInterval();
   return useQuery({ queryKey: ["stock-chart", symbol], queryFn: () => nepseApi.getStockChart(symbol), staleTime: staleMed, refetchInterval: medium, enabled: !!symbol });
 };
 
+export const useStockDailyChart = (symbol: string) => {
+  const { fast, stale } = useLiveInterval();
+  return useQuery({ queryKey: ["stock-chart-daily", symbol], queryFn: () => nepseApi.getStockDailyChart(symbol), staleTime: stale, refetchInterval: fast, enabled: !!symbol });
+};
+
 export const useFloorsheet = () => {
   const { medium, staleMed } = useLiveInterval();
-  return useQuery({ queryKey: ["floorsheet"], queryFn: nepseApi.getFloorsheet, staleTime: staleMed, refetchInterval: medium });
+  return useQuery({ queryKey: ["floorsheet"], queryFn: nepseApi.getFloorsheet, staleTime: staleMed * 2, refetchInterval: medium, refetchOnWindowFocus: false });
 };
 
 export const useCompanyFloorsheet = (symbol: string) => {
@@ -108,6 +156,11 @@ export const useCompanyFloorsheet = (symbol: string) => {
 export const useNews = () => {
   const { medium, staleMed } = useLiveInterval();
   return useQuery({ queryKey: ["news"], queryFn: nepseApi.getNews, staleTime: staleMed, refetchInterval: medium });
+};
+
+export const useIpo = () => {
+  const { medium, staleMed } = useLiveInterval();
+  return useQuery({ queryKey: ["ipos"], queryFn: nepseApi.getIpos, staleTime: staleMed, refetchInterval: medium });
 };
 
 export const useBrokers = () =>

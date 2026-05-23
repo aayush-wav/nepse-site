@@ -7,6 +7,7 @@ import { timeToMarketEvent, isNepalMarketOpen } from '../../utils/marketHours';
 import { nepseApi } from '../../lib/api';
 import NotificationDropdown from './NotificationDropdown';
 import AccountDropdown from './AccountDropdown';
+import PriceAlertManager from '../shared/PriceAlertManager';
 
 export default function TopBar() {
   const { toggleSidebar, toggleSearch, sidebarOpen } = useUIStore();
@@ -109,7 +110,7 @@ export default function TopBar() {
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             className={`p-1.5 rounded-lg text-text-secondary hover:text-text-primary transition-colors relative
               ${notificationsOpen ? 'bg-bg-elevated text-brand-cyan' : 'hover:bg-bg-elevated'}`}
-            title="Notifications"
+            title="Notifications & Alerts"
           >
             <Bell size={16} />
             <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-brand-cyan rounded-full shadow-glow-cyan" />

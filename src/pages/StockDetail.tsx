@@ -8,8 +8,8 @@ import {
 } from 'lucide-react';
 import { useMarketStore, useWatchlistStore, useUIStore } from '../store';
 import { 
-  useStockPrice, useStockDetail, useStockChart, useCompanyFloorsheet, 
-  useCompanyList, useBrokers, useLiveTrading 
+  useStockPrice, useStockDetail, useStockChart, useStockDailyChart, useCompanyFloorsheet, 
+  useCompanyList, useBrokers, useLiveTrading, useStockDepth
 } from '../hooks/useNepseData';
 import { 
   formatNPR, formatPercent, getPriceColorClass, 
@@ -36,7 +36,7 @@ const INDICATOR_LIST = [
   { id: 'vwap', label: 'VWAP' },
 ];
 
-const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
+const ChartTab = ({ symbol, data, dailyData, liveStock }: { symbol: string, data: any[], dailyData: any[], liveStock: any }) => {
   const [timeframe, setTimeframe] = useState('3M');
   const [drawTool, setDrawToolState] = useState<string>('none');
   const [showDrawMenu, setShowDrawMenu] = useState(false);
@@ -54,13 +54,73 @@ const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
   };
 
   const filteredData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    const latestTime = data.reduce((max, d) => {
+    if (timeframe === '1D') {
+      if (!dailyData || dailyData.length === 0) return [];
+      
+      const candles: any[] = [];
+      const msInterval = 5 * 60 * 1000; // 5-minute candles
+      
+      [...dailyData]
+        .sort((a, b) => (a.time || 0) - (b.time || 0))
+        .forEach(tick => {
+          const tickTimeMs = (tick.time || 0) * ((tick.time || 0) > 10000000000 ? 1 : 1000);
+          if (tickTimeMs === 0) return;
+          const candleTimeMs = Math.floor(tickTimeMs / msInterval) * msInterval;
+          const price = tick.contractRate || 0;
+          const qty = tick.contractQuantity || 0;
+      
+          let currentCandle = candles[candles.length - 1];
+          if (!currentCandle || currentCandle.timeMs !== candleTimeMs) {
+            candles.push({
+              timeMs: candleTimeMs,
+              time: candleTimeMs / 1000,
+              open: price,
+              high: price,
+              low: price,
+              close: price,
+              volume: qty
+            });
+          } else {
+            currentCandle.high = Math.max(currentCandle.high, price);
+            currentCandle.low = Math.min(currentCandle.low, price);
+            currentCandle.close = price;
+            currentCandle.volume += qty;
+          }
+        });
+      return candles;
+    }
+
+    let sourceData = [...(data || [])];
+    
+    // Append today's live OHLC to historical data if missing
+    if (sourceData.length > 0 && liveStock && liveStock.ltp > 0) {
+      const lastDataDate = new Date(sourceData[sourceData.length - 1].time * 1000);
+      const today = new Date();
+      if (lastDataDate.toDateString() !== today.toDateString()) {
+        const todayUtcMidnight = new Date(`${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`).getTime() / 1000;
+        // Make sure it's strictly greater than the last time
+        if (todayUtcMidnight > sourceData[sourceData.length - 1].time) {
+          sourceData.push({
+            time: todayUtcMidnight,
+            open: liveStock.open || liveStock.ltp,
+            high: liveStock.high || liveStock.ltp,
+            low: liveStock.low || liveStock.ltp,
+            close: liveStock.ltp,
+            volume: liveStock.volume || 0,
+          });
+        }
+      }
+    }
+
+    if (sourceData.length === 0) return [];
+
+    const latestTime = sourceData.reduce((max, d) => {
       const ts = typeof d.time === 'number' ? d.time * 1000 : new Date(d.time || d.date).getTime();
       return Math.max(max, ts);
     }, 0);
     const latestDate = new Date(latestTime || Date.now());
     let cutoff = new Date(latestDate.getTime());
+    
     switch (timeframe) {
       case '1W': cutoff.setDate(latestDate.getDate() - 7); break;
       case '1M': cutoff.setMonth(latestDate.getMonth() - 1); break;
@@ -68,14 +128,15 @@ const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
       case '6M': cutoff.setMonth(latestDate.getMonth() - 6); break;
       case '1Y': cutoff.setFullYear(latestDate.getFullYear() - 1); break;
       case '5Y': cutoff.setFullYear(latestDate.getFullYear() - 5); break;
-      case 'All': return data;
-      default: return data;
+      case 'All': return sourceData;
+      default: return sourceData;
     }
-    return data.filter(d => {
+    
+    return sourceData.filter(d => {
       const ts = typeof d.time === 'number' ? d.time * 1000 : new Date(d.time || d.date).getTime();
       return ts >= cutoff.getTime();
     });
-  }, [data, timeframe]);
+  }, [data, dailyData, timeframe, liveStock]);
 
   const toggleInd = (id: string) =>
     setActiveInds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -84,7 +145,7 @@ const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1">
-          {['1W', '1M', '3M', '6M', '1Y', '5Y', 'All'].map(tf => (
+          {['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'All'].map(tf => (
             <button key={tf} onClick={() => setTimeframe(tf)}
               className={`px-2.5 py-1 text-xs rounded font-bold transition-all ${timeframe === tf ? 'bg-brand-cyan text-bg-base' : 'border border-bg-border text-text-secondary hover:bg-bg-elevated'}`}>
               {tf}
@@ -162,7 +223,7 @@ const ChartTab = ({ symbol, data }: { symbol: string, data: any[] }) => {
             <p className="text-xs opacity-60">Data loads from the NEPSE API — try switching timeframes</p>
           </div>
         ) : (
-          <CandlestickChart ref={chartRef} data={filteredData} />
+          <CandlestickChart symbol={symbol} ref={chartRef} data={filteredData} />
         )}
       </div>
     </div>
@@ -540,8 +601,88 @@ const AIInsightTab = ({ stock }: { stock: any }) => {
   );
 };
 
+const MarketDepthTab = ({ symbol }: { symbol: string }) => {
+  const { data: depthData, isLoading } = useStockDepth(symbol);
+
+  if (isLoading) return <div className="p-8 text-center text-text-muted">Loading market depth...</div>;
+
+  const buyDepth = depthData?.marketDepth?.buyMarketDepthList || [];
+  const sellDepth = depthData?.marketDepth?.sellMarketDepthList || [];
+  const totalBuyQty = depthData?.marketDepth?.totalBuyQty || 0;
+  const totalSellQty = depthData?.marketDepth?.totalSellQty || 0;
+
+  return (
+    <div className="space-y-4">
+      <h4 className="font-syne font-bold">Market Depth — {symbol}</h4>
+      {!depthData?.marketDepth ? (
+        <div className="p-20 text-center text-text-muted italic border border-bg-border/30 rounded-xl">
+           Market depth data is currently unavailable. The market may be closed.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="flex justify-between items-center mb-2 px-2">
+              <span className="text-bull-green font-bold uppercase text-xs">Buy Orders</span>
+              <span className="text-xs text-text-muted">Total Qty: <span className="font-jetbrains font-bold text-text-primary">{totalBuyQty.toLocaleString()}</span></span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-bull-green/10">
+                  <tr>
+                    <th className="table-header text-left text-bull-green">Orders</th>
+                    <th className="table-header text-right text-bull-green">Qty</th>
+                    <th className="table-header text-right text-bull-green">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {buyDepth.map((d: any, i: number) => (
+                    <tr key={i} className="border-b border-bg-border/20 hover:bg-bg-elevated/40">
+                      <td className="table-cell">{d.orderCount}</td>
+                      <td className="table-cell text-right font-jetbrains">{d.quantity?.toLocaleString()}</td>
+                      <td className="table-cell text-right font-jetbrains text-bull-green">{formatNepaliNumber(d.orderPrice)}</td>
+                    </tr>
+                  ))}
+                  {buyDepth.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-text-muted text-xs">No buy orders</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2 px-2">
+              <span className="text-bear-red font-bold uppercase text-xs">Sell Orders</span>
+              <span className="text-xs text-text-muted">Total Qty: <span className="font-jetbrains font-bold text-text-primary">{totalSellQty.toLocaleString()}</span></span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-bear-red/10">
+                  <tr>
+                    <th className="table-header text-left text-bear-red">Price</th>
+                    <th className="table-header text-right text-bear-red">Qty</th>
+                    <th className="table-header text-right text-bear-red">Orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sellDepth.map((d: any, i: number) => (
+                    <tr key={i} className="border-b border-bg-border/20 hover:bg-bg-elevated/40">
+                      <td className="table-cell font-jetbrains text-bear-red">{formatNepaliNumber(d.orderPrice)}</td>
+                      <td className="table-cell text-right font-jetbrains">{d.quantity?.toLocaleString()}</td>
+                      <td className="table-cell text-right">{d.orderCount}</td>
+                    </tr>
+                  ))}
+                  {sellDepth.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-text-muted text-xs">No sell orders</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const tabs = [
   { id: 'chart', label: 'Chart', icon: BarChart2 },
+  { id: 'depth', label: 'Market Depth', icon: Layers },
   { id: 'fundamentals', label: 'Fundamentals', icon: FileText },
   { id: 'floorsheet', label: 'Floorsheet', icon: Activity },
   { id: 'broker', label: 'Broker Activity', icon: Users },
@@ -562,6 +703,7 @@ export default function StockDetail() {
   const { data: priceData, isLoading: loadingPrice } = useStockPrice(safeSymbol);
   const { data: detailData, isLoading: loadingDetail } = useStockDetail(safeSymbol);
   const { data: graphData, isLoading: loadingChart } = useStockChart(safeSymbol);
+  const { data: dailyGraphData, isLoading: loadingDailyChart } = useStockDailyChart(safeSymbol);
   const { data: liveTradingData } = useLiveTrading();
   const { data: companies } = useCompanyList();
   
@@ -576,9 +718,8 @@ export default function StockDetail() {
 
   if (loading) return <div className="p-8 text-center text-text-secondary"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-cyan mx-auto mb-4"></div>Loading security data...</div>;
 
-  const sdt = priceData?.securityDailyTradeDto || {};
-  const sec = priceData?.security || {};
-
+  const sdt = priceData?.securityDailyTradeDto || priceData || {};
+  const sec = priceData?.security || detailData?.security || detailData || {};
 
   const stock = {
     symbol: safeSymbol,
@@ -589,25 +730,26 @@ export default function StockDetail() {
     previousClose: sdt.previousClose || 0,
     change: (sdt.lastTradedPrice || 0) - (sdt.previousClose || 0),
     changePercent: (((sdt.lastTradedPrice || 0) - (sdt.previousClose || 1)) / (sdt.previousClose || 1)) * 100,
-    open: sdt.openPrice || 0,
-    high: sdt.highPrice || 0,
-    low: sdt.lowPrice || 0,
-    volume: sdt.totalTradeQuantity || 0,
-    turnover: sdt.totalTradeValue || priceData?.totalTurnover || 0,
-    marketCap: priceData?.marketCapitalization || detailData?.marketCap || 0,
-    week52High: sdt.fiftyTwoWeekHigh || detailData?.fiftyTwoWeekHigh || 0,
-    week52Low: sdt.fiftyTwoWeekLow || detailData?.fiftyTwoWeekLow || 0,
-    eps: detailData?.eps || 0,
-    peRatio: detailData?.peRatio || 0,
-    bookValue: detailData?.bookValue || 0,
-    pbRatio: detailData?.pbRatio || 0,
-    dividendYield: detailData?.dividendYield || 0,
-    roe: detailData?.roe || 0,
-    roa: detailData?.roa || 0,
-    nim: detailData?.nim || 0,
+    open: sdt.openPrice || sdt.open || 0,
+    high: sdt.highPrice || sdt.high || 0,
+    low: sdt.lowPrice || sdt.low || 0,
+    volume: sdt.totalTradeQuantity || sdt.volume || 0,
+    turnover: sdt.totalTradeValue || sdt.turnover || priceData?.totalTurnover || 0,
+    marketCap: priceData?.marketCapitalization || detailData?.marketCap || sec.marketCap || sdt.marketCap || 0,
+    week52High: sdt.fiftyTwoWeekHigh || detailData?.fiftyTwoWeekHigh || sec.fiftyTwoWeekHigh || 0,
+    week52Low: sdt.fiftyTwoWeekLow || detailData?.fiftyTwoWeekLow || sec.fiftyTwoWeekLow || 0,
+    eps: detailData?.eps || sec.eps || 0,
+    peRatio: detailData?.peRatio || sec.peRatio || 0,
+    bookValue: detailData?.bookValue || sec.bookValue || 0,
+    pbRatio: detailData?.pbRatio || sec.pbRatio || 0,
+    dividendYield: detailData?.dividendYield || sec.dividendYield || 0,
+    roe: detailData?.roe || sec.roe || 0,
+    roa: detailData?.roa || sec.roa || 0,
+    nim: detailData?.nim || sec.nim || 0,
   };
 
   const rawGraphData = graphData?.content || (Array.isArray(graphData) ? graphData : []);
+  const rawDailyData = dailyGraphData || [];
   let chartData: any[] = [];
   if (rawGraphData.length > 0) {
     const sortedData = [...rawGraphData].sort((a: any, b: any) => {
@@ -763,7 +905,8 @@ export default function StockDetail() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'chart' && <ChartTab symbol={stock.symbol} data={chartData} />}
+              {activeTab === 'chart' && <ChartTab symbol={stock.symbol} data={chartData} dailyData={rawDailyData} liveStock={stock} />}
+              {activeTab === 'depth' && <MarketDepthTab symbol={stock.symbol} />}
               {activeTab === 'fundamentals' && <FundamentalsTab apiStock={stock} />}
               {activeTab === 'floorsheet' && <FloorsheetTab symbol={stock.symbol} />}
               {activeTab === 'broker' && <BrokerActivityTab symbol={stock.symbol} />}

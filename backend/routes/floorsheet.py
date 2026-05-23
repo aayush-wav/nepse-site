@@ -1,8 +1,32 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
+import io
+import csv
 from nepse_client import nepse_client
 from cache import cache
 
 router = APIRouter(prefix="/api/floorsheet", tags=["floorsheet"])
+
+@router.get("/export")
+def export_full_floorsheet():
+    cached = cache.get("floorsheet_full")
+    data = cached if cached else nepse_client.get_floorsheet()
+    
+    if not data:
+        raise HTTPException(status_code=503, detail="Floorsheet data unavailable for export")
+        
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    if data:
+        keys = list(data[0].keys())
+        writer.writerow(keys)
+        for row in data:
+            writer.writerow([row.get(k, "") for k in keys])
+            
+    headers = {
+        "Content-Disposition": "attachment; filename=nepse_floorsheet.csv"
+    }
+    return Response(content=output.getvalue(), media_type="text/csv", headers=headers)
 
 @router.get("/")
 def get_full_floorsheet():

@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Plus, Trash2, Search, ArrowUpDown, TrendingUp, TrendingDown, LayoutGrid, List } from 'lucide-react';
 import { useWatchlistStore, useMarketStore } from '../store';
 import { formatNepaliNumber, formatPercent, getPriceColorClass, formatVolume } from '../utils';
+import { useLiveTrading } from '../hooks/useNepseData';
 
 export default function Watchlist() {
   const navigate = useNavigate();
   const { watchlists, activeWatchlistId, setActiveWatchlist, removeFromWatchlist, addWatchlist } = useWatchlistStore();
-  const { stocks } = useMarketStore();
+  const { data: stocksData } = useLiveTrading();
+  const stocks = stocksData || [];
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [search, setSearch] = useState('');
 
@@ -20,11 +22,11 @@ export default function Watchlist() {
       const live = stocks.find(s => s.symbol === item.symbol);
       return {
         ...item,
-        ltp: live?.ltp || item.priceWhenAdded,
-        changePercent: live?.changePercent || 0,
-        volume: live?.volume || 0,
-        high: live?.high || 0,
-        low: live?.low || 0,
+        ltp: live?.lastTradedPrice || live?.ltp || item.priceWhenAdded,
+        changePercent: live?.percentageChange || live?.changePercent || 0,
+        volume: live?.totalTradeQuantity || live?.volume || 0,
+        high: live?.highPrice || live?.high || 0,
+        low: live?.lowPrice || live?.low || 0,
       };
     });
   }, [activeWatchlist, stocks]);

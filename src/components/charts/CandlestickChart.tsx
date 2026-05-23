@@ -1,6 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
 import { useUIStore } from '../../store';
+import { useChartStore, DrawingLine } from '../../store/chartStore';
 
 export interface DrawingRef {
   setDrawMode: (mode: string) => void;
@@ -8,12 +9,13 @@ export interface DrawingRef {
 }
 
 interface CandlestickChartProps {
+  symbol: string;
   data: any[];
   height?: number;
 }
 
 const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function CandlestickChart(
-  { data, height = 500 },
+  { symbol, data, height = 500 },
   ref
 ) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -24,6 +26,7 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
   const clickPointRef = useRef<{ price: number; time: number } | null>(null);
   const drawnLinesRef = useRef<any[]>([]);
   const { theme, accentColor } = useUIStore();
+  const { drawings, addDrawing, clearDrawings: clearStoreDrawings } = useChartStore();
 
   useImperativeHandle(ref, () => ({
     setDrawMode: (mode: string) => {
@@ -39,6 +42,7 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
       });
       drawnLinesRef.current = [];
       clickPointRef.current = null;
+      if (symbol) clearStoreDrawings(symbol);
     },
   }));
 
@@ -102,6 +106,20 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
       candlestickSeriesRef.current = candlestickSeries;
       volumeSeriesRef.current = volumeSeries;
 
+      // Load existing drawings
+      const savedDrawings = drawings[symbol] || [];
+      savedDrawings.forEach((config: DrawingLine) => {
+        const line = candlestickSeries.createPriceLine({
+          price: config.price,
+          color: config.color,
+          lineWidth: config.lineWidth as any,
+          lineStyle: config.lineStyle as any,
+          axisLabelVisible: true,
+          title: config.title,
+        });
+        drawnLinesRef.current.push(line);
+      });
+
       // Drawing tool click handler
       chart.subscribeClick((param: any) => {
         const mode = drawModeRef.current;
@@ -112,15 +130,10 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
 
         if (mode === 'hline') {
           // Draw horizontal line immediately
-          const line = candlestickSeries.createPriceLine({
-            price,
-            color: '#F5A623',
-            lineWidth: 1,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `H: ${price.toFixed(2)}`,
-          });
+          const config = { price, color: '#F5A623', lineWidth: 1, lineStyle: 0, title: `H: ${price.toFixed(2)}` };
+          const line = candlestickSeries.createPriceLine({ ...config, axisLabelVisible: true } as any);
           drawnLinesRef.current.push(line);
+          addDrawing(symbol, config);
         } else if (mode === 'trendline' || mode === 'fib') {
           if (!clickPointRef.current) {
             // First click — mark it
@@ -139,23 +152,12 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
             const firstPrice = clickPointRef.current.price;
             if (mode === 'trendline') {
               // Draw trendline as two horizontal price levels
-              const lineA = candlestickSeries.createPriceLine({
-                price: firstPrice,
-                color: '#8B5CF6',
-                lineWidth: 1,
-                lineStyle: 0,
-                axisLabelVisible: true,
-                title: 'Trend A',
-              });
-              const lineB = candlestickSeries.createPriceLine({
-                price,
-                color: '#8B5CF6',
-                lineWidth: 1,
-                lineStyle: 0,
-                axisLabelVisible: true,
-                title: 'Trend B',
-              });
+              const cA = { price: firstPrice, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, title: 'Trend A' };
+              const cB = { price, color: '#8B5CF6', lineWidth: 1, lineStyle: 0, title: 'Trend B' };
+              const lineA = candlestickSeries.createPriceLine({ ...cA, axisLabelVisible: true } as any);
+              const lineB = candlestickSeries.createPriceLine({ ...cB, axisLabelVisible: true } as any);
               drawnLinesRef.current.push(lineA, lineB);
+              addDrawing(symbol, cA); addDrawing(symbol, cB);
             } else if (mode === 'fib') {
               // Fibonacci: 23.6%, 38.2%, 50%, 61.8%, 78.6%
               const high = Math.max(firstPrice, price);
@@ -172,15 +174,10 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
               ];
               levels.forEach(({ ratio, label, color }) => {
                 const lvlPrice = high - diff * ratio;
-                const line = candlestickSeries.createPriceLine({
-                  price: lvlPrice,
-                  color,
-                  lineWidth: 1,
-                  lineStyle: 1,
-                  axisLabelVisible: true,
-                  title: `Fib ${label}`,
-                });
+                const config = { price: lvlPrice, color, lineWidth: 1, lineStyle: 1, title: `Fib ${label}` };
+                const line = candlestickSeries.createPriceLine({ ...config, axisLabelVisible: true } as any);
                 drawnLinesRef.current.push(line);
+                addDrawing(symbol, config);
               });
             }
             clickPointRef.current = null;
@@ -200,23 +197,12 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
             drawnLinesRef.current.push(top);
           } else {
             const firstPrice = clickPointRef.current.price;
-            const bottom = candlestickSeries.createPriceLine({
-              price,
-              color: '#00D4FF',
-              lineWidth: 1,
-              lineStyle: 0,
-              axisLabelVisible: true,
-              title: 'Rect Bot',
-            });
-            const top2 = candlestickSeries.createPriceLine({
-              price: firstPrice,
-              color: '#00D4FF',
-              lineWidth: 1,
-              lineStyle: 0,
-              axisLabelVisible: true,
-              title: 'Rect Top',
-            });
+            const cBot = { price, color: '#00D4FF', lineWidth: 1, lineStyle: 0, title: 'Rect Bot' };
+            const cTop = { price: firstPrice, color: '#00D4FF', lineWidth: 1, lineStyle: 0, title: 'Rect Top' };
+            const bottom = candlestickSeries.createPriceLine({ ...cBot, axisLabelVisible: true } as any);
+            const top2 = candlestickSeries.createPriceLine({ ...cTop, axisLabelVisible: true } as any);
             drawnLinesRef.current.push(bottom, top2);
+            addDrawing(symbol, cBot); addDrawing(symbol, cTop);
             clickPointRef.current = null;
           }
         }
@@ -246,13 +232,13 @@ const CandlestickChart = forwardRef<DrawingRef, CandlestickChartProps>(function 
       high: d.high,
       low: d.low,
       close: d.close,
-    })).sort((a, b) => (a.time > b.time ? 1 : -1));
+    })).sort((a, b) => (a.time as number) - (b.time as number));
 
     const volData = data.map(d => ({
       time: d.time || d.date,
       value: d.volume,
       color: d.close >= d.open ? 'rgba(0, 196, 140, 0.3)' : 'rgba(255, 77, 79, 0.3)',
-    })).sort((a, b) => (a.time > b.time ? 1 : -1));
+    })).sort((a, b) => (a.time as number) - (b.time as number));
 
     candlestickSeriesRef.current.setData(candleData);
     volumeSeriesRef.current.setData(volData);

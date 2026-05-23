@@ -44,7 +44,10 @@ export default function Floorsheet() {
           <p className="text-xs text-text-secondary">Trade-by-trade transaction history for today</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-xs">
+          <button 
+            onClick={() => window.open('http://127.0.0.1:8000/api/floorsheet/export', '_blank')}
+            className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-xs"
+          >
             <Download size={14} /> Export CSV
           </button>
           <button 
@@ -126,10 +129,18 @@ export default function Floorsheet() {
                   <td className="table-cell font-jetbrains text-xs text-text-secondary">{item.contractTime}</td>
                   <td className="table-cell font-bold text-text-primary">{item.stockSymbol}</td>
                   <td className="table-cell font-jetbrains text-xs">
-                    <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-brand-cyan border border-brand-cyan/20">{item.buyerMemberId}</span>
+                    {item.buyerMemberId ? (
+                      <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-brand-cyan border border-brand-cyan/20">{item.buyerMemberId}</span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-text-muted border border-bg-border">Hidden</span>
+                    )}
                   </td>
                   <td className="table-cell font-jetbrains text-xs">
-                    <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-bear-red border border-bear-red/20">{item.sellerMemberId}</span>
+                    {item.sellerMemberId ? (
+                      <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-bear-red border border-bear-red/20">{item.sellerMemberId}</span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded bg-bg-elevated text-text-muted border border-bg-border">Hidden</span>
+                    )}
                   </td>
                   <td className="table-cell text-right font-jetbrains font-medium">{item.contractQuantity.toLocaleString()}</td>
                   <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNepaliNumber(item.contractRate)}</td>

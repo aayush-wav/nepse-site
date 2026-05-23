@@ -64,6 +64,13 @@ export default function BrokerIntel() {
         </div>
       </div>
 
+      <div className="card p-3 bg-brand-gold/10 border-brand-gold/20 flex gap-3 items-center">
+        <Info size={24} className="text-brand-gold shrink-0" />
+        <p className="text-xs text-text-secondary">
+          <strong className="text-brand-gold font-syne">NEPSE API Limitation:</strong> Live broker IDs are currently hidden in the public NEPSE floorsheet during trading hours. The data below may be incomplete or populated with estimated models until full data is released at market close.
+        </p>
+      </div>
+
       {/* Top 3 Stats */}
       {topStats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

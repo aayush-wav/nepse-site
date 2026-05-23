@@ -26,36 +26,36 @@ def is_market_hours() -> bool:
     total_mins = now.hour * 60 + now.minute
     return 595 <= total_mins < 905
 
+import concurrent.futures
+import threading
+
+def _fetch_and_cache(name, fetch_func, ttl):
+    try:
+        data = fetch_func()
+        if data:
+            cache.set(name, data, ttl_seconds=ttl)
+    except Exception as e:
+        logger.error(f"Error fetching {name}: {e}")
+
 def refresh_live_data():
     """Called every 15 seconds during market hours for near-real-time data."""
     if not is_market_hours():
         logger.debug("Market closed — skipping live refresh")
         return
-    logger.info("Refreshing live market data (15s cycle)...")
-
-    data = nepse_client.get_live_trading()
-    if data:
-        cache.set("live_trading", data, ttl_seconds=TTL_LIVE)
-
-    gainers = nepse_client.get_top_gainers()
-    if gainers:
-        cache.set("top_gainers", gainers, ttl_seconds=TTL_LIVE)
-
-    losers = nepse_client.get_top_losers()
-    if losers:
-        cache.set("top_losers", losers, ttl_seconds=TTL_LIVE)
-
-    turnover = nepse_client.get_top_turnover()
-    if turnover:
-        cache.set("top_turnover", turnover, ttl_seconds=TTL_LIVE)
-
-    indices = nepse_client.get_nepse_index()
-    if indices:
-        cache.set("nepse_index", indices, ttl_seconds=TTL_LIVE)
-
-    summary = nepse_client.get_market_summary()
-    if summary:
-        cache.set("market_summary", summary, ttl_seconds=TTL_MEDIUM)
+    logger.info("Refreshing live market data (concurrently)...")
+    
+    tasks = [
+        ("live_trading", nepse_client.get_live_trading, TTL_LIVE),
+        ("top_gainers", nepse_client.get_top_gainers, TTL_LIVE),
+        ("top_losers", nepse_client.get_top_losers, TTL_LIVE),
+        ("top_turnover", nepse_client.get_top_turnover, TTL_LIVE),
+        ("nepse_index", nepse_client.get_nepse_index, TTL_LIVE),
+        ("market_summary", nepse_client.get_market_summary, TTL_MEDIUM),
+    ]
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        for name, func, ttl in tasks:
+            executor.submit(_fetch_and_cache, name, func, ttl)
 
 def refresh_floorsheet():
     """Heavy operation. Called every 2 minutes."""
@@ -63,21 +63,20 @@ def refresh_floorsheet():
         logger.debug("Market closed — skipping floorsheet refresh")
         return
     logger.info("Refreshing full floorsheet...")
-    data = nepse_client.get_floorsheet()
-    if data:
-        cache.set("floorsheet_full", data, ttl_seconds=TTL_SLOW)
+    _fetch_and_cache("floorsheet_full", nepse_client.get_floorsheet, TTL_SLOW)
 
 def refresh_slow_data():
     """Called every 10 minutes. Fetches heavier/less time-critical data."""
-    logger.info("Refreshing slow data...")
-
-    companies = nepse_client.get_company_list()
-    if companies:
-        cache.set("company_list", companies, ttl_seconds=TTL_STATIC)
-
-    sub_indices = nepse_client.get_sector_sub_indices()
-    if sub_indices:
-        cache.set("sector_sub_indices", sub_indices, ttl_seconds=TTL_SLOW)
+    logger.info("Refreshing slow data (concurrently)...")
+    
+    tasks = [
+        ("company_list", nepse_client.get_company_list, TTL_STATIC),
+        ("sector_sub_indices", nepse_client.get_sector_sub_indices, TTL_SLOW),
+    ]
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        for name, func, ttl in tasks:
+            executor.submit(_fetch_and_cache, name, func, ttl)
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
@@ -109,8 +108,14 @@ def start_scheduler():
     scheduler.start()
     logger.info("Background scheduler started (15s live cycle)")
 
-    # Warm cache immediately on startup
-    refresh_live_data()
-    refresh_slow_data()
+    # Warm cache in a background thread so we don't block API startup
+    def initial_warmup():
+        logger.info("Starting initial cache warmup...")
+        refresh_live_data()
+        refresh_slow_data()
+        logger.info("Initial cache warmup completed.")
+        
+    threading.Thread(target=initial_warmup, daemon=True).start()
 
     return scheduler
+

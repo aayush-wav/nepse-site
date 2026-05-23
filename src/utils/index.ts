@@ -8,24 +8,26 @@ export { DP_CHARGE };
  * Format number as Nepali Rupees
  */
 export function formatNPR(value: number, compact = false): string {
+  const safeValue = value || 0;
   if (compact) {
-    if (Math.abs(value) >= 1e10) return `Rs. ${(value / 1e10).toFixed(2)} Arba`;
-    if (Math.abs(value) >= 1e7) return `Rs. ${(value / 1e7).toFixed(2)} Cr`;
-    if (Math.abs(value) >= 1e5) return `Rs. ${(value / 1e5).toFixed(2)} L`;
-    if (Math.abs(value) >= 1e3) return `Rs. ${(value / 1e3).toFixed(1)}K`;
+    if (Math.abs(safeValue) >= 1e10) return `Rs. ${(safeValue / 1e10).toFixed(2)} Arba`;
+    if (Math.abs(safeValue) >= 1e7) return `Rs. ${(safeValue / 1e7).toFixed(2)} Cr`;
+    if (Math.abs(safeValue) >= 1e5) return `Rs. ${(safeValue / 1e5).toFixed(2)} L`;
+    if (Math.abs(safeValue) >= 1e3) return `Rs. ${(safeValue / 1e3).toFixed(1)}K`;
   }
-  return `Rs. ${formatNepaliNumber(value)}`;
+  return `Rs. ${formatNepaliNumber(safeValue)}`;
 }
 
 /**
  * Format number in Nepali notation (1,23,456)
  */
 export function formatNepaliNumber(num: number, decimals = 2): string {
-  const fixed = Math.abs(num).toFixed(decimals);
+  const safeNum = num || 0;
+  const fixed = Math.abs(safeNum).toFixed(decimals);
   const [intPart, decPart] = fixed.split('.');
   
   if (intPart.length <= 3) {
-    return `${num < 0 ? '-' : ''}${intPart}${decPart ? '.' + decPart : ''}`;
+    return `${safeNum < 0 ? '-' : ''}${intPart}${decPart ? '.' + decPart : ''}`;
   }
   
   const lastThree = intPart.slice(-3);
@@ -38,26 +40,29 @@ export function formatNepaliNumber(num: number, decimals = 2): string {
  * Format percentage with sign
  */
 export function formatPercent(value: number, decimals = 2): string {
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(decimals)}%`;
+  const safeValue = value || 0;
+  const sign = safeValue > 0 ? '+' : '';
+  return `${sign}${safeValue.toFixed(decimals)}%`;
 }
 
 /**
  * Format change with sign and Rs.
  */
 export function formatChange(value: number, decimals = 2): string {
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(decimals)}`;
+  const safeValue = value || 0;
+  const sign = safeValue > 0 ? '+' : '';
+  return `${sign}${safeValue.toFixed(decimals)}`;
 }
 
 /**
  * Format volume in compact form
  */
 export function formatVolume(volume: number): string {
-  if (volume >= 1e7) return `${(volume / 1e7).toFixed(2)} Cr`;
-  if (volume >= 1e5) return `${(volume / 1e5).toFixed(2)} L`;
-  if (volume >= 1e3) return `${(volume / 1e3).toFixed(1)}K`;
-  return volume.toString();
+  const safeVolume = volume || 0;
+  if (safeVolume >= 1e7) return `${(safeVolume / 1e7).toFixed(2)} Cr`;
+  if (safeVolume >= 1e5) return `${(safeVolume / 1e5).toFixed(2)} L`;
+  if (safeVolume >= 1e3) return `${(safeVolume / 1e3).toFixed(1)}K`;
+  return safeVolume.toString();
 }
 
 /**

@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, ChevronDown, Check, X, Play, RotateCcw, Save } from 'lucide-react';
-import { useLiveTrading, useCompanyList } from '../hooks/useNepseData';
+import { Search, SlidersHorizontal, ChevronDown, Check, X, Play, RotateCcw, Save, Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { useScreener, useCompanyList } from '../hooks/useNepseData';
 import { formatNPR, formatPercent, getPriceColorClass, formatNepaliNumber } from '../utils';
 
 interface FilterState {
@@ -15,6 +15,9 @@ interface FilterState {
   maxPE: string;
   minEPS: string;
   minDividend: string;
+  near52High: boolean;
+  near52Low: boolean;
+  volumeSpike: boolean;
 }
 
 const initialFilters: FilterState = {
@@ -27,90 +30,47 @@ const initialFilters: FilterState = {
   maxPE: '',
   minEPS: '',
   minDividend: '',
+  near52High: false,
+  near52Low: false,
+  volumeSpike: false,
 };
 
 export default function Screener() {
   const navigate = useNavigate();
-  const { data: rawData, isLoading: loadingLive } = useLiveTrading();
-  const { data: companies, isLoading: loadingCompanies } = useCompanyList();
-  
-  const sectorMap = useMemo(() => {
-    const map = new Map();
-    if (companies) {
-      companies.forEach((c: any) => map.set(c.symbol, c.sectorName));
-    }
-    return map;
-  }, [companies]);
-
-  const stocks = useMemo(() => {
-    if (!rawData) return [];
-    
-    return rawData.map((s: any) => {
-      const scripSector = sectorMap.get(s.symbol) || s.sectorName || s.sector || 'Others';
-      
-      return {
-        symbol: s.symbol, 
-        companyName: s.securityName || s.companyName || s.symbol,
-        sector: scripSector,
-        ltp: s.lastTradedPrice || s.ltp || 0, 
-        previousClose: s.previousClose || 0,
-        changePercent: s.percentageChange || 0,
-        volume: s.totalTradeQuantity || s.volume || 0,
-        turnover: s.totalTradeValue || s.totalTurnover || s.turnover || 0,
-        marketCap: s.marketCap || 0,
-        eps: s.eps || 0, 
-        peRatio: s.peRatio || 0, 
-        bookValue: s.bookValue || 0,
-        pbRatio: s.pbRatio || 0, 
-        dividendYield: s.dividendYield || 0,
-      };
-    });
-  }, [rawData, sectorMap]);
-
-  const sectors = useMemo(() => {
-    const s = new Set(stocks.map(st => st.sector).filter(Boolean));
-    return Array.from(s).sort();
-  }, [stocks]);
-
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const filteredResults = useMemo(() => {
-    let result = [...stocks];
+  const { data: companies, isLoading: loadingCompanies } = useCompanyList();
+  const { data: screenerData, isLoading: loadingScreener } = useScreener(filters);
 
-    if (filters.sector.length > 0) {
-      result = result.filter(s => filters.sector.includes(s.sector));
-    }
-    if (filters.minPrice) {
-      result = result.filter(s => s.ltp >= parseFloat(filters.minPrice));
-    }
-    if (filters.maxPrice) {
-      result = result.filter(s => s.ltp <= parseFloat(filters.maxPrice));
-    }
-    if (filters.minChange) {
-      result = result.filter(s => s.changePercent >= parseFloat(filters.minChange));
-    }
-    if (filters.maxChange) {
-      result = result.filter(s => s.changePercent <= parseFloat(filters.maxChange));
-    }
-    if (filters.minPE) {
-      result = result.filter(s => (s.peRatio || 0) >= parseFloat(filters.minPE));
-    }
-    if (filters.maxPE) {
-      result = result.filter(s => (s.peRatio || 0) <= parseFloat(filters.maxPE));
-    }
-    if (filters.minEPS) {
-      result = result.filter(s => (s.eps || 0) >= parseFloat(filters.minEPS));
-    }
-    if (filters.minDividend) {
-      result = result.filter(s => (s.dividendYield || 0) >= parseFloat(filters.minDividend));
-    }
+  const sectors = useMemo(() => {
+    if (!companies) return [];
+    const s = new Set(companies.map((c: any) => c.sectorName || 'Others'));
+    return Array.from(s).sort() as string[];
+  }, [companies]);
 
-    return result;
-  }, [stocks, filters]);
+  const filteredResults = screenerData || [];
 
   const resetFilters = () => {
     setFilters(initialFilters);
+  };
+
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    if (filters.sector.length > 0) filters.sector.forEach(s => params.append('sector', s));
+    if (filters.minPrice) params.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+    if (filters.minChange) params.append('minChange', filters.minChange);
+    if (filters.maxChange) params.append('maxChange', filters.maxChange);
+    if (filters.minPE) params.append('minPE', filters.minPE);
+    if (filters.maxPE) params.append('maxPE', filters.maxPE);
+    if (filters.minEPS) params.append('minEPS', filters.minEPS);
+    if (filters.minDividend) params.append('minDividend', filters.minDividend);
+    if (filters.near52High) params.append('near52High', 'true');
+    if (filters.near52Low) params.append('near52Low', 'true');
+    if (filters.volumeSpike) params.append('volumeSpike', 'true');
+    
+    window.open(`http://127.0.0.1:8000/api/stocks/screener/export?${params.toString()}`, '_blank');
   };
 
   const toggleSector = (sector: string) => {
@@ -222,6 +182,49 @@ export default function Screener() {
               className="input-field text-xs py-1.5 w-full"
             />
           </div>
+
+          {/* Advanced Server-Side Indicators */}
+          <div className="space-y-3 pt-4 border-t border-bg-border/50">
+            <label className="text-xs font-bold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
+              <Zap size={12} /> Smart Filters
+            </label>
+            <button
+              onClick={() => setFilters(f => ({ ...f, near52High: !f.near52High }))}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
+                filters.near52High 
+                  ? 'bg-bull-green/10 border-bull-green/40 text-bull-green' 
+                  : 'border-bg-border text-text-muted hover:border-text-muted'
+              }`}
+            >
+              <TrendingUp size={14} />
+              Near 52-Week High
+              {filters.near52High && <span className="ml-auto text-[9px] bg-bull-green/20 px-1.5 py-0.5 rounded">ON</span>}
+            </button>
+            <button
+              onClick={() => setFilters(f => ({ ...f, near52Low: !f.near52Low }))}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
+                filters.near52Low 
+                  ? 'bg-bear-red/10 border-bear-red/40 text-bear-red' 
+                  : 'border-bg-border text-text-muted hover:border-text-muted'
+              }`}
+            >
+              <TrendingDown size={14} />
+              Near 52-Week Low
+              {filters.near52Low && <span className="ml-auto text-[9px] bg-bear-red/20 px-1.5 py-0.5 rounded">ON</span>}
+            </button>
+            <button
+              onClick={() => setFilters(f => ({ ...f, volumeSpike: !f.volumeSpike }))}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
+                filters.volumeSpike 
+                  ? 'bg-brand-gold/10 border-brand-gold/40 text-brand-gold' 
+                  : 'border-bg-border text-text-muted hover:border-text-muted'
+              }`}
+            >
+              <Zap size={14} />
+              Volume Spike (3x Avg)
+              {filters.volumeSpike && <span className="ml-auto text-[9px] bg-brand-gold/20 px-1.5 py-0.5 rounded">ON</span>}
+            </button>
+          </div>
         </div>
 
         <div className="p-4 border-t border-bg-border bg-bg-base/30">
@@ -250,8 +253,11 @@ export default function Screener() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-xs">
-              <Save size={14} /> Save Filter
+            <button 
+              onClick={handleExport}
+              className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-xs"
+            >
+              <Save size={14} /> Export CSV
             </button>
             <div className="h-8 w-px bg-bg-border mx-1" />
             <select className="input-field text-xs py-1.5">
@@ -265,10 +271,10 @@ export default function Screener() {
         </div>
 
         <div className="card flex-1 overflow-hidden flex flex-col">
-          {loadingLive || loadingCompanies ? (
+          {loadingScreener || loadingCompanies ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted">
               <div className="w-12 h-12 rounded-full border-4 border-bg-border border-t-brand-cyan animate-spin" />
-              <p className="font-medium animate-pulse">Syncing market data...</p>
+              <p className="font-medium animate-pulse">Filtering market data...</p>
             </div>
           ) : (
             <div className="flex-1 overflow-auto scrollbar-thin">
@@ -281,13 +287,13 @@ export default function Screener() {
                     <th className="table-header">Change %</th>
                     <th className="table-header">P/E</th>
                     <th className="table-header">EPS</th>
-                    <th className="table-header">P/B</th>
+                    <th className="table-header">Momentum</th>
                     <th className="table-header">Dividend</th>
                     <th className="table-header text-right">Market Cap</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResults.map((s, i) => (
+                  {filteredResults.map((s: any, i: number) => (
                     <tr 
                       key={s.symbol}
                       onClick={() => navigate(`/stock/${s.symbol}`)}
@@ -295,8 +301,17 @@ export default function Screener() {
                     >
                       <td className="table-cell text-text-muted font-jetbrains text-xs">{i + 1}</td>
                       <td className="table-cell">
-                        <div className="font-bold text-text-primary">{s.symbol}</div>
-                        <div className="text-[10px] text-text-muted truncate max-w-[150px]">{s.sector}</div>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <div className="font-bold text-text-primary">{s.symbol}</div>
+                            <div className="text-[10px] text-text-muted truncate max-w-[150px]">{s.sector}</div>
+                          </div>
+                          <div className="flex gap-1">
+                            {s.near52High && <span className="text-[8px] px-1 py-0.5 rounded bg-bull-green/10 text-bull-green font-bold" title="Near 52W High">52H</span>}
+                            {s.near52Low && <span className="text-[8px] px-1 py-0.5 rounded bg-bear-red/10 text-bear-red font-bold" title="Near 52W Low">52L</span>}
+                            {s.volumeSpike && <span className="text-[8px] px-1 py-0.5 rounded bg-brand-gold/10 text-brand-gold font-bold" title="Volume Spike">⚡</span>}
+                          </div>
+                        </div>
                       </td>
                       <td className="table-cell font-jetbrains">{formatNepaliNumber(s.ltp)}</td>
                       <td className={`table-cell font-jetbrains font-bold ${getPriceColorClass(s.changePercent)}`}>
@@ -304,7 +319,15 @@ export default function Screener() {
                       </td>
                       <td className="table-cell font-jetbrains text-text-secondary">{s.peRatio || '—'}</td>
                       <td className="table-cell font-jetbrains text-text-secondary">{s.eps || '—'}</td>
-                      <td className="table-cell font-jetbrains text-text-secondary">{s.pbRatio || '—'}</td>
+                      <td className="table-cell font-jetbrains">
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                          (s.momentumScore || 0) > 60 ? 'bg-bull-green/10 text-bull-green' :
+                          (s.momentumScore || 0) < 30 ? 'bg-bear-red/10 text-bear-red' :
+                          'bg-brand-gold/10 text-brand-gold'
+                        }`}>
+                          {s.momentumScore ?? '—'}
+                        </span>
+                      </td>
                       <td className="table-cell font-jetbrains text-text-secondary">{s.dividendYield ? `${s.dividendYield}%` : '—'}</td>
                       <td className="table-cell text-right font-jetbrains text-text-secondary">{formatNPR(s.marketCap || 0, true)}</td>
                     </tr>
