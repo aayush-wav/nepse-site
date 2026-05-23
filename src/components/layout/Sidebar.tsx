@@ -2,8 +2,9 @@ import { NavLink } from 'react-router-dom';
 import { useUIStore } from '../../store';
 import {
   LayoutDashboard, Activity, CandlestickChart, Filter, FileSpreadsheet,
-  Building2, Rocket, Briefcase, Star, BookOpen, PieChart, Landmark,
-  Calculator, Bell, GraduationCap, Settings, ChevronLeft, ChevronRight, TrendingUp
+  Building, Building2, Briefcase, Star, BookOpen, PieChart, Landmark,
+  Calculator, Bell, GraduationCap, Settings, ChevronLeft, ChevronRight, TrendingUp,
+  ArrowRightLeft, Target, Network, ShieldAlert, Map, Zap, MapPin, Award, Calendar, Clipboard
 } from 'lucide-react';
 
 const navGroups = [
@@ -12,17 +13,30 @@ const navGroups = [
     items: [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/live-market', label: 'Live Market', icon: Activity },
+      { path: '/heat-map', label: 'Heat Map', icon: Map },
       { path: '/charts', label: 'Charts', icon: CandlestickChart },
     ],
   },
   {
     label: 'Analysis',
     items: [
+      { path: '/signals', label: 'Trading Signals', icon: Zap },
+      { path: '/compare', label: 'Compare Stocks', icon: ArrowRightLeft },
       { path: '/screener', label: 'Screener', icon: Filter },
       { path: '/floorsheet', label: 'Floorsheet', icon: FileSpreadsheet },
-      { path: '/broker-intel', label: 'Broker Intel', icon: Building2 },
+      { path: '/broker-intel', label: 'Broker Intel', icon: Building },
       { path: '/fundamentals', label: 'Fundamentals', icon: BookOpen },
       { path: '/sector', label: 'Sectors', icon: PieChart },
+    ],
+  },
+  {
+    label: 'Smart Money',
+    items: [
+      { path: '/sbie/broker-map', label: 'Broker Map', icon: MapPin },
+      { path: '/sbie/risk-scanner', label: 'Risk Scanner', icon: ShieldAlert },
+      { path: '/sbie/accumulation', label: 'Accumulation', icon: Target },
+      { path: '/sbie/coordination', label: 'Coordination', icon: Network },
+      { path: '/sbie/scorecards', label: 'Broker Scorecards', icon: Award },
     ],
   },
   {
@@ -30,7 +44,7 @@ const navGroups = [
     items: [
       { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
       { path: '/watchlist', label: 'Watchlist', icon: Star },
-      { path: '/ipo-zone', label: 'IPO Zone', icon: Rocket },
+      { path: '/calendar', label: 'Inv. Calendar', icon: Calendar },
       { path: '/mutual-funds', label: 'Mutual Funds', icon: Landmark },
     ],
   },
@@ -38,6 +52,7 @@ const navGroups = [
     label: 'Tools',
     items: [
       { path: '/calculators', label: 'Calculators', icon: Calculator },
+      { path: '/notes', label: 'Trading Notes', icon: Clipboard },
       { path: '/news-alerts', label: 'News & Alerts', icon: Bell },
       { path: '/education', label: 'Education', icon: GraduationCap },
     ],

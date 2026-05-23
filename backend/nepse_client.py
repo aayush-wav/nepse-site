@@ -1,5 +1,7 @@
 from nepse import Nepse
 import logging
+import time
+import threading
 
 logger = logging.getLogger("nepse_client")
 
@@ -7,25 +9,45 @@ class NepseClient:
     def __init__(self):
         self._nepse = Nepse()
         self._nepse.setTLSVerification(False)  # Required: NEPSE SSL cert issue
+        self._lock = threading.Lock()
+        self._last_reinit = 0
+        self._reinit_cooldown = 30  # seconds between reinit attempts
         logger.info("NepseClient initialized with TLS verification disabled")
 
+    def _reinitialize(self):
+        """Thread-safe reinitialisation with cooldown to prevent thundering herd."""
+        now = time.time()
+        if now - self._last_reinit < self._reinit_cooldown:
+            return  # skip — too soon
+        with self._lock:
+            # Double-check inside lock
+            if time.time() - self._last_reinit < self._reinit_cooldown:
+                return
+            try:
+                logger.info("Reinitializing NepseClient...")
+                self._nepse = Nepse()
+                self._nepse.setTLSVerification(False)
+                self._last_reinit = time.time()
+                logger.info("NepseClient reinitialized successfully")
+            except Exception as e2:
+                self._last_reinit = time.time()  # still apply cooldown
+                logger.error(f"Reinitialization failed: {e2}")
+
     def _safe_call(self, method_name: str, *args, **kwargs):
-        """Wrap every nepse call in error handling. Returns data or empty fallback."""
+        """Wrap every nepse call in error handling. Returns data or None."""
         try:
             method = getattr(self._nepse, method_name)
             result = method(*args, **kwargs)
             return result
         except Exception as e:
             logger.error(f"NepseAPI call '{method_name}' failed: {e}")
+            self._reinitialize()
             try:
-                logger.info("Attempting to reinitialize NepseClient...")
-                self._nepse = Nepse()
-                self._nepse.setTLSVerification(False)
                 method = getattr(self._nepse, method_name)
                 result = method(*args, **kwargs)
                 return result
             except Exception as e2:
-                logger.error(f"Reinitialization failed: {e2}")
+                logger.error(f"Retry after reinit failed for '{method_name}': {e2}")
                 return None
 
     # --- MARKET SUMMARY ---
@@ -46,8 +68,6 @@ class NepseClient:
         return self._safe_call("getCompanyList")
 
     def get_company_price_detail(self, symbol: str):
-        # Pass symbol to get company ID, library probably handles it or we pass symbol directly
-        # If the library takes an ID, we might need a workaround, but passing symbol for now.
         return self._safe_call("getCompanyDetails", symbol)
 
     def get_security_detail(self, symbol: str):

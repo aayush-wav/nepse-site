@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, BarChart3, Volume2, Banknote,
-  Calendar, Zap, Activity, Flame, ChevronRight, Sparkles, Eye
+  Calendar, Zap, Activity, Flame, ChevronRight, Sparkles, Eye, AlertTriangleIcon
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useNepseData';
 import { formatNPR, formatPercent, formatVolume, getPriceColorClass, formatNepaliNumber } from '../utils';
+import AIFlowBrief from '../components/sbie/AIFlowBrief';
 
 
 const fadeUp = {
@@ -69,6 +70,7 @@ function MarketMood({ advancing, declining, indexChange }: { advancing: number; 
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
+      <AIFlowBrief />
       <div className="rounded-2xl bg-bg-surface border border-bg-border h-52 skeleton" />
       <div className="flex gap-3">
         {[1, 2, 3].map(i => <div key={i} className="h-9 rounded-full skeleton flex-1" />)}
@@ -204,6 +206,7 @@ export default function Dashboard() {
 
   return (
     <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
+      <AIFlowBrief />
 
       <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-bg-surface via-bg-surface to-bg-elevated border border-bg-border/80 p-6 lg:p-8">
         <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-cyan/[0.04] rounded-full blur-3xl pointer-events-none" />

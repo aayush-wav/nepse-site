@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+import asyncio
 from nepse_client import nepse_client
 from cache import cache
 from typing import Dict, List, Optional
@@ -41,7 +42,7 @@ BROKER_MAP = {
 }
 
 @router.get("/")
-def get_all_brokers():
+async def get_all_brokers():
     """
     Get all brokers summary by aggregating the floorsheet.
     """
@@ -52,7 +53,7 @@ def get_all_brokers():
 
     floorsheet = cache.get("floorsheet_full")
     if not floorsheet:
-        floorsheet = nepse_client.get_floorsheet()
+        floorsheet = await asyncio.to_thread(nepse_client.get_floorsheet)
         if floorsheet:
             cache.set("floorsheet_full", floorsheet, 300)
     
@@ -153,13 +154,13 @@ def get_all_brokers():
     return {"status": "ok", "source": "live", "data": result}
 
 @router.get("/{broker_id}")
-def get_broker_detail(broker_id: str):
+async def get_broker_detail(broker_id: str):
     """
     Get specific broker's stock-wise breakdown.
     """
     floorsheet = cache.get("floorsheet_full")
     if not floorsheet:
-        floorsheet = nepse_client.get_floorsheet()
+        floorsheet = await asyncio.to_thread(nepse_client.get_floorsheet)
         if floorsheet:
             cache.set("floorsheet_full", floorsheet, 300)
     

@@ -1,15 +1,25 @@
 from fastapi import APIRouter, HTTPException, Response
+import asyncio
 import io
 import csv
 from nepse_client import nepse_client
 from cache import cache
+import logging
 
 router = APIRouter(prefix="/api/floorsheet", tags=["floorsheet"])
+logger = logging.getLogger("floorsheet")
+
+def _fetch_floorsheet_sync():
+    """Fetch floorsheet from NEPSE API (blocking). Run in a thread."""
+    data = nepse_client.get_floorsheet()
+    if data:
+        cache.set("floorsheet_full", data, 300)
+    return data
 
 @router.get("/export")
-def export_full_floorsheet():
+async def export_full_floorsheet():
     cached = cache.get("floorsheet_full")
-    data = cached if cached else nepse_client.get_floorsheet()
+    data = cached if cached else await asyncio.to_thread(_fetch_floorsheet_sync)
     
     if not data:
         raise HTTPException(status_code=503, detail="Floorsheet data unavailable for export")
@@ -29,27 +39,29 @@ def export_full_floorsheet():
     return Response(content=output.getvalue(), media_type="text/csv", headers=headers)
 
 @router.get("/")
-def get_full_floorsheet():
+async def get_full_floorsheet():
     """
     Full day floorsheet. This is the heaviest endpoint.
-    Cache TTL = 5 minutes. Only call during market hours.
+    Returns cached data immediately; if cache is empty, fetches in background thread.
     """
     cached = cache.get("floorsheet_full")
     if cached:
         return {"status": "ok", "source": "cache", "total": len(cached), "data": cached}
-    data = nepse_client.get_floorsheet()
+    
+    # Fetch in a thread to avoid blocking the event loop
+    data = await asyncio.to_thread(_fetch_floorsheet_sync)
     if data:
-        cache.set("floorsheet_full", data, 300)
         return {"status": "ok", "source": "live", "total": len(data), "data": data}
     raise HTTPException(status_code=503, detail="Floorsheet data unavailable")
 
 @router.get("/{symbol}")
-def get_company_floorsheet(symbol: str):
+async def get_company_floorsheet(symbol: str):
     cache_key = f"floorsheet_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "source": "cache", "symbol": symbol, "data": cached}
-    data = nepse_client.get_company_floorsheet(symbol.upper())
+    
+    data = await asyncio.to_thread(nepse_client.get_company_floorsheet, symbol.upper())
     if data is not None:
         cache.set(cache_key, data, 300)
         return {"status": "ok", "source": "live", "symbol": symbol, "data": data}

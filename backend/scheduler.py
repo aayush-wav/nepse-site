@@ -34,6 +34,7 @@ def _fetch_and_cache(name, fetch_func, ttl):
         data = fetch_func()
         if data:
             cache.set(name, data, ttl_seconds=ttl)
+            logger.debug(f"Scheduler cached '{name}' ({len(data) if isinstance(data, list) else 'obj'})")
     except Exception as e:
         logger.error(f"Error fetching {name}: {e}")
 
@@ -110,12 +111,36 @@ def start_scheduler():
 
     # Warm cache in a background thread so we don't block API startup
     def initial_warmup():
-        logger.info("Starting initial cache warmup...")
-        refresh_live_data()
-        refresh_slow_data()
-        logger.info("Initial cache warmup completed.")
+        logger.info("Starting initial cache warmup (all data including floorsheet)...")
+        
+        # Phase 1: Fast data — all in parallel
+        fast_tasks = [
+            ("live_trading", nepse_client.get_live_trading, TTL_MEDIUM),
+            ("top_gainers", nepse_client.get_top_gainers, TTL_MEDIUM),
+            ("top_losers", nepse_client.get_top_losers, TTL_MEDIUM),
+            ("top_turnover", nepse_client.get_top_turnover, TTL_MEDIUM),
+            ("top_volume", nepse_client.get_top_volume, TTL_MEDIUM),
+            ("nepse_index", nepse_client.get_nepse_index, TTL_MEDIUM),
+            ("market_summary", nepse_client.get_market_summary, TTL_MEDIUM),
+            ("company_list", nepse_client.get_company_list, TTL_STATIC),
+            ("sector_sub_indices", nepse_client.get_sector_sub_indices, TTL_SLOW),
+        ]
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            for name, func, ttl in fast_tasks:
+                executor.submit(_fetch_and_cache, name, func, ttl)
+        
+        logger.info("Phase 1 warmup complete (fast data)")
+        
+        # Invalidate the cached dashboard payload so next request rebuilds it with fresh data
+        cache.invalidate("full_dashboard_payload")
+        
+        # Phase 2: Floorsheet (heavy, runs after fast data is ready)
+        _fetch_and_cache("floorsheet_full", nepse_client.get_floorsheet, TTL_SLOW)
+        logger.info("Phase 2 warmup complete (floorsheet)")
+        
+        logger.info("Initial cache warmup fully completed.")
         
     threading.Thread(target=initial_warmup, daemon=True).start()
 
     return scheduler
-

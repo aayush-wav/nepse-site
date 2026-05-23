@@ -24,6 +24,16 @@ import MutualFunds from './pages/MutualFunds';
 import NewsAlerts from './pages/NewsAlerts';
 import Education from './pages/Education';
 import SettingsPage from './pages/SettingsPage';
+import MarketHeatMap from './pages/MarketHeatMap';
+import TradingSignals from './pages/TradingSignals';
+import CompareStocks from './pages/CompareStocks';
+import InvestmentCalendar from './pages/InvestmentCalendar';
+import TradingNotes from './pages/TradingNotes';
+import BrokerIntelligenceMap from './pages/sbie/BrokerIntelligenceMap';
+import ManipulationRiskScanner from './pages/sbie/ManipulationRiskScanner';
+import StealthAccumulationDetector from './pages/sbie/StealthAccumulationDetector';
+import BrokerCoordinationAlert from './pages/sbie/BrokerCoordinationAlert';
+import BrokerScorecard from './pages/sbie/BrokerScorecard';
 import { useAlertChecker } from './hooks/useAlertChecker';
 
 export default function App() {
@@ -108,6 +118,16 @@ export default function App() {
             <Route path="/news-alerts" element={<NewsAlerts />} />
             <Route path="/education" element={<Education />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/heat-map" element={<MarketHeatMap />} />
+            <Route path="/signals" element={<TradingSignals />} />
+            <Route path="/compare" element={<CompareStocks />} />
+            <Route path="/calendar" element={<InvestmentCalendar />} />
+            <Route path="/notes" element={<TradingNotes />} />
+            <Route path="/sbie/broker-map" element={<BrokerIntelligenceMap />} />
+            <Route path="/sbie/risk-scanner" element={<ManipulationRiskScanner />} />
+            <Route path="/sbie/accumulation" element={<StealthAccumulationDetector />} />
+            <Route path="/sbie/coordination" element={<BrokerCoordinationAlert />} />
+            <Route path="/sbie/scorecards" element={<BrokerScorecard />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>

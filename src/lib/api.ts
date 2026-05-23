@@ -1,10 +1,17 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`);
-  if (!res.ok) throw new Error(`API error: ${res.status} on ${path}`);
-  const json = await res.json();
-  return json.data as T;
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, { ...options, signal: controller.signal });
+    if (!res.ok) throw new Error(`API error: ${res.status} on ${path}`);
+    const json = await res.json();
+    return json.data as T;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const nepseApi = {
@@ -52,4 +59,13 @@ export const nepseApi = {
   // Brokers
   getBrokers: () => apiFetch<any[]>("/api/brokers/"),
   getBrokerDetail: (id: string) => apiFetch<any>(`/api/brokers/${id}`),
+
+  // SBIE
+  getBrokerMap: () => apiFetch<any>("/api/sbie/broker-map"),
+  getRiskScanner: () => apiFetch<any[]>("/api/sbie/risk-scanner"),
+  getAccumulation: () => apiFetch<any[]>("/api/sbie/accumulation"),
+  getCoordination: () => apiFetch<any>("/api/sbie/coordination"),
+  getBrokerScorecard: () => apiFetch<any[]>("/api/sbie/broker-scorecard"),
+  getBrokerScorecardProfile: (id: string) => apiFetch<any>(`/api/sbie/broker-scorecard/${id}`),
+  generateAIBrief: () => apiFetch<any>("/api/sbie/ai-brief", { method: "POST" }),
 };

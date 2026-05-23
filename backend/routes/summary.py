@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+import asyncio
+import concurrent.futures
 from nepse_client import nepse_client
 from cache import cache
 import logging
@@ -6,8 +8,17 @@ import logging
 router = APIRouter(prefix="/api/summary", tags=["summary"])
 logger = logging.getLogger("summary")
 
+def _get_cached_or_fetch(key, fetch_fn, ttl):
+    """Check cache first, then fetch from NEPSE API. Used by the thread pool."""
+    data = cache.get(key)
+    if not data:
+        data = fetch_fn()
+        if data:
+            cache.set(key, data, ttl)
+    return data
+
 @router.get("/dashboard")
-def get_dashboard_summary():
+async def get_dashboard_summary():
     """
     Single endpoint that powers the entire Dashboard page.
     Aggregates: index, summary, gainers, losers, turnover, volume, status.
@@ -16,16 +27,6 @@ def get_dashboard_summary():
     cached_dashboard = cache.get("full_dashboard_payload")
     if cached_dashboard:
         return cached_dashboard
-
-    def get_cached_or_fetch(key, fetch_fn, ttl):
-        data = cache.get(key)
-        if not data:
-            data = fetch_fn()
-            if data:
-                cache.set(key, data, ttl)
-        return data
-
-    import concurrent.futures
 
     tasks = {
         "nepse_index": ("nepse_index", nepse_client.get_nepse_index, 60),
@@ -40,19 +41,23 @@ def get_dashboard_summary():
         "live_market": ("live_trading", nepse_client.get_live_trading, 60),
     }
 
-    results = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_key = {
-            executor.submit(get_cached_or_fetch, t[0], t[1], t[2]): key
-            for key, t in tasks.items()
-        }
-        for future in concurrent.futures.as_completed(future_to_key):
-            key = future_to_key[future]
-            try:
-                results[key] = future.result()
-            except Exception as exc:
-                logger.error(f"Error fetching dashboard component '{key}': {exc}")
-                results[key] = [] if key != "market_status" else "CLOSED"
+    def fetch_all():
+        results = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_key = {
+                executor.submit(_get_cached_or_fetch, t[0], t[1], t[2]): key
+                for key, t in tasks.items()
+            }
+            for future in concurrent.futures.as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    results[key] = future.result()
+                except Exception as exc:
+                    logger.error(f"Error fetching dashboard component '{key}': {exc}")
+                    results[key] = [] if key != "market_status" else "CLOSED"
+        return results
+
+    results = await asyncio.to_thread(fetch_all)
     
     payload = {
         "status": "ok",

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
+import asyncio
 from nepse_client import nepse_client
 from cache import cache
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
 @router.get("/screener")
-def get_screener_data(
+async def get_screener_data(
     sector: Optional[List[str]] = Query(None),
     minPrice: Optional[float] = None,
     maxPrice: Optional[float] = None,
@@ -24,13 +25,15 @@ def get_screener_data(
 ):
     live_data = cache.get("live_trading")
     if not live_data:
-        live_data = nepse_client.get_live_trading() or []
-        cache.set("live_trading", live_data, 15)
+        live_data = await asyncio.to_thread(nepse_client.get_live_trading) or []
+        if live_data:
+            cache.set("live_trading", live_data, 15)
 
     companies = cache.get("company_list")
     if not companies:
-        companies = nepse_client.get_company_list() or []
-        cache.set("company_list", companies, 3600)
+        companies = await asyncio.to_thread(nepse_client.get_company_list) or []
+        if companies:
+            cache.set("company_list", companies, 3600)
     
     sector_map = {c.get("symbol"): c.get("sectorName") for c in companies}
     
@@ -109,8 +112,62 @@ def get_screener_data(
         
     return {"status": "ok", "data": result}
 
+def _build_screener_sync(sector, minPrice, maxPrice, minChange, maxChange, minPE, maxPE, minEPS, minDividend, near52High, near52Low, volumeSpike, minMomentum, maxMomentum):
+    """Synchronous helper for the export endpoint."""
+    live_data = cache.get("live_trading") or nepse_client.get_live_trading() or []
+    companies = cache.get("company_list") or nepse_client.get_company_list() or []
+    
+    sector_map = {c.get("symbol"): c.get("sectorName") for c in companies}
+    all_volumes = [s.get("totalTradeQuantity") or s.get("volume") or 0 for s in live_data]
+    avg_market_vol = (sum(all_volumes) / len(all_volumes)) if all_volumes else 1
+    
+    result = []
+    for s in live_data:
+        sym = s.get("symbol")
+        scrip_sector = sector_map.get(sym) or s.get("sectorName") or s.get("sector") or "Others"
+        ltp = s.get("lastTradedPrice") or s.get("ltp") or 0
+        change = s.get("percentageChange") or 0
+        pe = s.get("peRatio") or 0
+        eps = s.get("eps") or 0
+        div = s.get("dividendYield") or 0
+        vol = s.get("totalTradeQuantity") or s.get("volume") or 0
+        high52 = s.get("fiftyTwoWeekHigh") or 0
+        low52 = s.get("fiftyTwoWeekLow") or 0
+        
+        pct_from_52h = ((high52 - ltp) / high52 * 100) if high52 > 0 else 999
+        pct_from_52l = ((ltp - low52) / low52 * 100) if low52 > 0 else 999
+        is_near_52h = pct_from_52h <= 5
+        is_near_52l = pct_from_52l <= 5
+        is_volume_spike = vol > (avg_market_vol * 3)
+        momentum = 0.0
+        if high52 > 0 and low52 > 0 and (high52 - low52) > 0:
+            range_position = (ltp - low52) / (high52 - low52) * 100
+            momentum = (change * 10) + (range_position * 0.5) + (20 if is_volume_spike else 0)
+        
+        if sector and scrip_sector not in sector: continue
+        if minPrice is not None and ltp < minPrice: continue
+        if maxPrice is not None and ltp > maxPrice: continue
+        if minChange is not None and change < minChange: continue
+        if maxChange is not None and change > maxChange: continue
+        if minPE is not None and pe < minPE: continue
+        if maxPE is not None and pe > maxPE: continue
+        if minEPS is not None and eps < minEPS: continue
+        if minDividend is not None and div < minDividend: continue
+        if near52High is True and not is_near_52h: continue
+        if near52Low is True and not is_near_52l: continue
+        if volumeSpike is True and not is_volume_spike: continue
+        if minMomentum is not None and momentum < minMomentum: continue
+        if maxMomentum is not None and momentum > maxMomentum: continue
+        
+        result.append({
+            "symbol": sym, "companyName": s.get("securityName") or sym, "sector": scrip_sector,
+            "ltp": ltp, "changePercent": change, "volume": vol, "eps": eps, "peRatio": pe,
+            "week52High": high52, "week52Low": low52, "momentumScore": round(momentum, 2),
+        })
+    return result
+
 @router.get("/screener/export")
-def export_screener_data(
+async def export_screener_data(
     sector: Optional[List[str]] = Query(None),
     minPrice: Optional[float] = None, maxPrice: Optional[float] = None,
     minChange: Optional[float] = None, maxChange: Optional[float] = None,
@@ -124,14 +181,12 @@ def export_screener_data(
     import io
     import csv
     
-    # Reuse the screener logic
-    result = get_screener_data(
-        sector, minPrice, maxPrice, minChange, maxChange,
+    data = await asyncio.to_thread(
+        _build_screener_sync, sector, minPrice, maxPrice, minChange, maxChange,
         minPE, maxPE, minEPS, minDividend, near52High, near52Low,
         volumeSpike, minMomentum, maxMomentum
     )
     
-    data = result["data"]
     output = io.StringIO()
     writer = csv.writer(output)
     
@@ -147,27 +202,29 @@ def export_screener_data(
     return Response(content=output.getvalue(), media_type="text/csv", headers=headers)
 
 @router.get("/list")
-def get_company_list():
+async def get_company_list():
     cached = cache.get("company_list")
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
-    data = nepse_client.get_company_list()
+    data = await asyncio.to_thread(nepse_client.get_company_list)
     if data:
         cache.set("company_list", data, 3600)
         return {"status": "ok", "source": "live", "data": data}
     raise HTTPException(status_code=503, detail="NEPSE company list unavailable")
 
 @router.get("/{symbol}/price")
-def get_stock_price(symbol: str):
+async def get_stock_price(symbol: str):
     cache_key = f"price_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
-    data = nepse_client.get_company_price_detail(symbol.upper())
+    data = await asyncio.to_thread(nepse_client.get_company_price_detail, symbol.upper())
     
     if not data:
-        # Fallback to fetching from live market
-        live_data = nepse_client.get_live_trading()
+        # Fallback: try from cached live market data first (instant), then fetch
+        live_data = cache.get("live_trading")
+        if not live_data:
+            live_data = await asyncio.to_thread(nepse_client.get_live_trading)
         if live_data:
             stock = next((s for s in live_data if s.get('symbol') == symbol.upper()), None)
             if stock:
@@ -179,16 +236,18 @@ def get_stock_price(symbol: str):
     raise HTTPException(status_code=404, detail=f"Price data not found for {symbol}")
 
 @router.get("/{symbol}/detail")
-def get_stock_detail(symbol: str):
+async def get_stock_detail(symbol: str):
     cache_key = f"detail_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
-    data = nepse_client.get_security_detail(symbol.upper())
+    data = await asyncio.to_thread(nepse_client.get_security_detail, symbol.upper())
     
     if not data:
-        # Fallback to fetching from live market
-        live_data = nepse_client.get_live_trading()
+        # Fallback: try from cached live market data first
+        live_data = cache.get("live_trading")
+        if not live_data:
+            live_data = await asyncio.to_thread(nepse_client.get_live_trading)
         if live_data:
             stock = next((s for s in live_data if s.get('symbol') == symbol.upper()), None)
             if stock:
@@ -200,36 +259,36 @@ def get_stock_detail(symbol: str):
     raise HTTPException(status_code=404, detail=f"Detail not found for {symbol}")
 
 @router.get("/{symbol}/depth")
-def get_stock_depth(symbol: str):
+async def get_stock_depth(symbol: str):
     cache_key = f"depth_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
-    data = nepse_client.get_supply_demand(symbol.upper())
+    data = await asyncio.to_thread(nepse_client.get_supply_demand, symbol.upper())
     if data:
         cache.set(cache_key, data, 15)
         return {"status": "ok", "source": "live", "data": data}
     raise HTTPException(status_code=404, detail=f"Market depth not found for {symbol}")
 
 @router.get("/{symbol}/chart/daily")
-def get_stock_daily_chart(symbol: str):
+async def get_stock_daily_chart(symbol: str):
     cache_key = f"chart_daily_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "data": cached}
-    data = nepse_client.get_company_daily_chart(symbol.upper())
+    data = await asyncio.to_thread(nepse_client.get_company_daily_chart, symbol.upper())
     if data:
         cache.set(cache_key, data, 3600)
         return {"status": "ok", "data": data}
     raise HTTPException(status_code=404, detail=f"Chart data not found for {symbol}")
 
 @router.get("/{symbol}/chart")
-def get_stock_chart(symbol: str):
+async def get_stock_chart(symbol: str):
     cache_key = f"chart_{symbol.upper()}"
     cached = cache.get(cache_key)
     if cached:
         return {"status": "ok", "data": cached}
-    data = nepse_client.get_company_chart(symbol.upper())
+    data = await asyncio.to_thread(nepse_client.get_company_chart, symbol.upper())
     if data:
         cache.set(cache_key, data, 3600)
         return {"status": "ok", "data": data}
