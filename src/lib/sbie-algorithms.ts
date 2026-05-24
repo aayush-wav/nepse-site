@@ -151,22 +151,65 @@ export interface ResolvedFloorsheet {
   data: FloorsheetRow[];
   label: string;
   isFallback: boolean;
+  /** Calendar date of the session this floorsheet represents (YYYY-MM-DD). */
+  sessionDate: string;
+}
+
+const FLOORSHEET_SNAPSHOT_KEY = 'sbie-floorsheet-snapshot-v1';
+
+function todayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function saveFloorsheetSnapshot(data: FloorsheetRow[], sessionDate: string): void {
+  try {
+    localStorage.setItem(
+      FLOORSHEET_SNAPSHOT_KEY,
+      JSON.stringify({ sessionDate, data, savedAt: Date.now() })
+    );
+  } catch {
+    // quota or private mode
+  }
+}
+
+function loadFloorsheetSnapshot(): { sessionDate: string; data: FloorsheetRow[] } | null {
+  try {
+    const raw = localStorage.getItem(FLOORSHEET_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.data?.length) return null;
+    return { sessionDate: parsed.sessionDate || todayDateString(), data: parsed.data };
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveFloorsheet(): Promise<ResolvedFloorsheet> {
+  const today = todayDateString();
+
   try {
-    const today = await nepseApi.getFloorsheet();
-    if (today && today.length > 0) {
-      return { data: normalizeFloorsheet(today), label: 'Today', isFallback: false };
+    const live = await nepseApi.getFloorsheet();
+    if (live && live.length > 0) {
+      const data = normalizeFloorsheet(live);
+      saveFloorsheetSnapshot(data, today);
+      return { data, label: 'Today', isFallback: false, sessionDate: today };
     }
   } catch {
-    // fall through to fallback
+    // fall through to snapshot
   }
 
-  // Today is empty — market not yet open, try yesterday
-  // The existing API only provides today's full floorsheet, so we return
-  // the cached data with a fallback label if empty.
-  return { data: [], label: 'Yesterday', isFallback: true };
+  const snapshot = loadFloorsheetSnapshot();
+  if (snapshot && snapshot.data.length > 0) {
+    const isPreviousDay = snapshot.sessionDate !== today;
+    return {
+      data: snapshot.data,
+      label: isPreviousDay ? 'Yesterday' : 'Today',
+      isFallback: isPreviousDay,
+      sessionDate: snapshot.sessionDate,
+    };
+  }
+
+  return { data: [], label: 'Yesterday', isFallback: true, sessionDate: today };
 }
 
 /** Normalize raw floorsheet rows into our canonical shape */

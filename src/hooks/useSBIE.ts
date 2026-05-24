@@ -46,6 +46,7 @@ interface SBIEBaseData {
   smartFlags: Record<string, SmartMoneyFlags>;
   isFallback: boolean;
   dataLabel: string;
+  sessionDate: string;
 }
 
 function useSBIEBaseData() {
@@ -73,6 +74,7 @@ function useSBIEBaseData() {
         smartFlags,
         isFallback: resolved.isFallback,
         dataLabel: resolved.label,
+        sessionDate: resolved.sessionDate,
       };
     },
     refetchInterval: getRefreshInterval(),
@@ -332,6 +334,7 @@ export interface AIBriefContext {
   totalTurnover: number;
   dataLabel: string;
   isFallback: boolean;
+  sessionDate: string;
 }
 
 export function useAIBriefContext() {
@@ -340,7 +343,7 @@ export function useAIBriefContext() {
   return useQuery<AIBriefContext>({
     queryKey: ['sbie-ai-brief-context', base.data?.floorsheet.length],
     queryFn: (): AIBriefContext => {
-      const { floorsheet, livePrices, priceMap, profiles, smartFlags, isFallback, dataLabel } = base.data!;
+      const { floorsheet, livePrices, priceMap, profiles, smartFlags, isFallback, dataLabel, sessionDate } = base.data!;
 
       // Top smart money brokers
       const scorecards = computeBrokerScorecards(profiles, smartFlags, livePrices);
@@ -378,6 +381,7 @@ export function useAIBriefContext() {
         totalTurnover,
         dataLabel,
         isFallback,
+        sessionDate,
       };
     },
     enabled: !!base.data,

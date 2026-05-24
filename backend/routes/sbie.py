@@ -396,7 +396,7 @@ async def generate_ai_brief():
         Be sharp, professional, and use exact numbers. Do not include markdown headers or bullet points.
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         return {"status": "ok", "text": response.text}
