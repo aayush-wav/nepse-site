@@ -73,9 +73,9 @@ export default function SaarathiChat() {
     <>
       {/* Floating Action Button */}
       <motion.button
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-2xl transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full transition-all duration-300 ${
           isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-        } bg-gradient-to-br from-brand-cyan to-brand-violet text-white hover:shadow-brand-cyan/20 hover:scale-105`}
+        } bg-brand-cyan text-white hover:bg-brand-cyan/90`}
         onClick={() => setIsOpen(true)}
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -91,12 +91,12 @@ export default function SaarathiChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] h-[600px] max-h-[80vh] flex flex-col bg-bg-surface border border-bg-border shadow-2xl rounded-2xl overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[380px] h-[600px] max-h-[80vh] flex flex-col bg-bg-surface border border-bg-border rounded-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-bg-border bg-bg-elevated/50 backdrop-blur-md">
+            <div className="flex items-center justify-between p-4 border-b border-bg-border bg-bg-elevated">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-cyan to-brand-violet flex items-center justify-center shadow-inner">
+                <div className="w-8 h-8 rounded-full bg-brand-cyan flex items-center justify-center">
                   <Bot size={18} className="text-white" />
                 </div>
                 <div>

@@ -156,7 +156,7 @@ export default function VideoCourse() {
         transition={{ duration: 0.4 }}
         className={`relative overflow-hidden rounded-2xl border ${c.border} ${c.bg} p-6 md:p-8`}
       >
-        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-current opacity-10 blur-3xl" />
+        
 
         <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
@@ -165,10 +165,10 @@ export default function VideoCourse() {
               <span className={`rounded-full ${c.bg} ${c.text} border ${c.border} px-3 py-1 text-xs font-bold uppercase tracking-wider`}>
                 {course.level}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-bg-border bg-bg-base/60 px-3 py-1 text-xs font-medium text-text-secondary">
+              <span className="inline-flex items-center gap-1 rounded-full border border-bg-border bg-bg-base px-3 py-1 text-xs font-medium text-text-secondary">
                 <Clock size={12} /> ~{course.estimatedHours} hours
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-bg-border bg-bg-base/60 px-3 py-1 text-xs font-medium text-text-secondary">
+              <span className="inline-flex items-center gap-1 rounded-full border border-bg-border bg-bg-base px-3 py-1 text-xs font-medium text-text-secondary">
                 <PlayCircle size={12} /> {course.videos.length} videos
               </span>
             </div>
@@ -187,7 +187,7 @@ export default function VideoCourse() {
 
           {/* Progress card on the right */}
           {hasVideos && (
-            <div className="min-w-[180px] rounded-xl border border-bg-border bg-bg-base/60 p-4 backdrop-blur">
+            <div className="min-w-[180px] rounded-xl border border-bg-border bg-bg-base p-4">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-text-secondary">
                 <Award size={14} /> Your Progress
               </div>

@@ -62,6 +62,18 @@ export const nepseApi = {
 
   // IPO
   getIpos: () => apiFetch<any[]>("/api/ipo/"),
+  checkAllotment: (boid: string, companyId: string) =>
+    apiFetch<any>("/api/ipo/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boid, companyId }),
+    }),
+  checkAllotmentBulk: (boids: { id: string; name: string; boid: string }[], companyId: string) =>
+    apiFetch<any>("/api/ipo/check-bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boids, companyId }),
+    }),
 
   // Brokers
   getBrokers: () => apiFetch<any[]>("/api/brokers/"),

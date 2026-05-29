@@ -97,11 +97,11 @@ export default function App() {
       <SearchOverlay />
       <BrokerDetailModal />
       
-      <main className={`transition-all duration-300 pt-16 min-h-screen ${sidebarOpen ? 'lg:pl-60 pl-0' : 'lg:pl-[68px] pl-0'}`}>
+      <main className={`transition-all duration-300 pt-16 min-h-screen ${sidebarOpen ? 'lg:pl-60 pl-0' : 'lg:pl-48 pl-0'}`}>
         {/* Mobile Overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 z-30 lg:hidden"
             onClick={() => useUIStore.getState().toggleSidebar()}
           />
         )}

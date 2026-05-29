@@ -13,7 +13,7 @@ export default function BrokerDetailModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md bg-black/40"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60"
           onClick={() => setSelectedBrokerId(null)}
         >
           <motion.div
@@ -21,9 +21,9 @@ export default function BrokerDetailModal() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-5xl bg-bg-surface border border-bg-border rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            className="w-full max-w-5xl bg-bg-surface border border-bg-border rounded-3xl overflow-hidden max-h-[90vh] flex flex-col"
           >
-            <div className="flex items-center justify-between p-4 border-b border-bg-border/50 bg-bg-base/30 shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-bg-border bg-bg-base shrink-0">
               <span className="font-syne font-bold text-xs uppercase tracking-widest text-text-muted">Broker Intelligence Report</span>
               <button 
                 onClick={() => setSelectedBrokerId(null)}

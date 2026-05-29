@@ -208,9 +208,7 @@ export default function Dashboard() {
     <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
       <AIFlowBrief />
 
-      <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-bg-surface via-bg-surface to-bg-elevated border border-bg-border/80 p-6 lg:p-8">
-        <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-cyan/[0.04] rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-brand-violet/[0.04] rounded-full blur-3xl pointer-events-none" />
+      <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-bg-surface border border-bg-border p-6 lg:p-8">
 
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-center">
           <div className="space-y-2">
@@ -251,7 +249,7 @@ export default function Dashboard() {
               { label: 'Transactions', value: formatNepaliNumber(transactions, 0), icon: Activity, color: 'text-brand-violet' },
               { label: 'Breadth', value: (advancing > 0 || declining > 0) ? `${advancing}↑ ${declining}↓` : 'N/A', icon: BarChart3, color: 'text-text-primary' },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl bg-bg-base/60 border border-bg-border/50 p-3">
+              <div key={stat.label} className="rounded-xl bg-bg-base border border-bg-border p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <stat.icon size={12} className={stat.color} />
                   <span className="text-[10px] text-text-muted uppercase tracking-wider">{stat.label}</span>
@@ -426,11 +424,11 @@ export default function Dashboard() {
             ].map((action) => (
               <motion.button
                 key={action.path}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1 }}
+                whileTap={{ scale: 1 }}
                 onClick={() => navigate(action.path)}
-                className={`rounded-xl p-4 bg-gradient-to-br ${action.color} border border-bg-border/50
-                  text-left hover:border-bg-border transition-all group`}
+                className="rounded-xl p-4 bg-bg-surface border border-bg-border
+                  text-left hover:bg-bg-elevated transition-colors group"
               >
                 <action.icon size={20} className="text-text-secondary group-hover:text-text-primary transition-colors mb-2" />
                 <div className="font-semibold text-sm text-text-primary">{action.label}</div>

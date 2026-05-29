@@ -55,7 +55,7 @@ export default function SearchOverlay() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 backdrop-blur-sm bg-black/60"
+          className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-black/60"
           onClick={toggleSearch}
         >
           <motion.div
@@ -63,7 +63,7 @@ export default function SearchOverlay() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: -20 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl bg-bg-surface border border-bg-border rounded-2xl shadow-2xl overflow-hidden"
+            className="w-full max-w-2xl bg-bg-surface border border-bg-border rounded-2xl overflow-hidden"
           >
             <div className="flex items-center px-4 py-4 border-b border-bg-border/50">
               <Search className="text-brand-cyan shrink-0" size={24} />

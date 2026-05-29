@@ -276,7 +276,7 @@ function ChartGridCell({ initialSymbol = 'NABIL', isFullscreenLayout = false }: 
               <AnimatePresence>
                 {showSymbolSearch && (
                   <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                    className="absolute top-full left-0 mt-2 w-80 card border-bg-border shadow-2xl z-50 overflow-hidden">
+                    className="absolute top-full left-0 mt-2 w-80 card border-bg-border z-50 overflow-hidden">
                     <div className="p-2 border-b border-bg-border">
                       <input autoFocus placeholder="Search symbol or company..." value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
@@ -495,7 +495,7 @@ function ChartGridCell({ initialSymbol = 'NABIL', isFullscreenLayout = false }: 
       {/* ─── MAIN CHART ──────────────────────── */}
       <div className="card overflow-hidden border-bg-border/40 relative bg-bg-surface">
         {chartLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-base/60 backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-base">
             <Loader2 size={32} className="text-brand-cyan animate-spin" />
           </div>
         )}

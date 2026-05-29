@@ -149,7 +149,7 @@ export default function Fundamentals() {
 
       {/* Market Valuation Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card p-6 bg-gradient-to-br from-bg-surface to-bg-base border-brand-cyan/20">
+        <div className="card p-6 bg-bg-surface border-brand-cyan/20">
            <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Average Market P/E</span>
               <div className="w-8 h-8 rounded bg-brand-cyan/10 flex items-center justify-center text-brand-cyan">
@@ -159,7 +159,7 @@ export default function Fundamentals() {
            <div className="text-3xl font-syne font-black text-text-primary">{stats.avgPE}</div>
            <p className="text-xs text-text-secondary mt-2">Current average P/E ratio across the market based on live data.</p>
         </div>
-        <div className="card p-6 bg-gradient-to-br from-bg-surface to-bg-base border-bull-green/20">
+        <div className="card p-6 bg-bg-surface border-bull-green/20">
            <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Dividend Yield (Avg)</span>
               <div className="w-8 h-8 rounded bg-bull-green/10 flex items-center justify-center text-bull-green">
@@ -169,7 +169,7 @@ export default function Fundamentals() {
            <div className="text-3xl font-syne font-black text-text-primary">{stats.avgDiv}%</div>
            <p className="text-xs text-text-secondary mt-2">Average dividend yield for companies with active dividend distributions.</p>
         </div>
-        <div className="card p-6 bg-gradient-to-br from-bg-surface to-bg-base border-brand-gold/20">
+        <div className="card p-6 bg-bg-surface border-brand-gold/20">
            <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Market P/B Ratio</span>
               <div className="w-8 h-8 rounded bg-brand-gold/10 flex items-center justify-center text-brand-gold">

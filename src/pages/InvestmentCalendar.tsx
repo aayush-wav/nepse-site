@@ -86,7 +86,7 @@ export default function InvestmentCalendar() {
       {activeTab === 'ipo' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between gap-4">
-            <motion.div className="card p-4 bg-gradient-to-r from-brand-cyan/10 to-brand-violet/10 border-brand-cyan/20 flex flex-col sm:flex-row items-center justify-between gap-4 flex-1">
+            <motion.div className="card p-4 bg-bg-surface border-brand-cyan/20 flex flex-col sm:flex-row items-center justify-between gap-4 flex-1">
               <div className="flex items-center gap-3">
                 <CheckCircle2 size={24} className="text-brand-cyan" />
                 <div>
@@ -196,12 +196,12 @@ export default function InvestmentCalendar() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60"
               onClick={() => setCheckerOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-bg-surface border border-bg-border rounded-xl shadow-2xl p-6"
+              className="relative w-full max-w-md bg-bg-surface border border-bg-border rounded-xl p-6"
             >
               <button onClick={() => setCheckerOpen(false)} className="absolute top-4 right-4 text-text-muted"><X size={20} /></button>
               <h2 className="font-syne font-bold text-xl mb-1">Check Allotment</h2>

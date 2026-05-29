@@ -24,10 +24,10 @@ export default function AccountDropdown({ onClose }: AccountDropdownProps) {
   ];
 
   return (
-    <div className="bg-bg-surface border border-bg-border rounded-xl shadow-2xl overflow-hidden">
-      <div className="p-4 border-b border-bg-border bg-bg-elevated/30">
+    <div className="bg-bg-surface border border-bg-border rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-bg-border bg-bg-elevated">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-cyan to-brand-violet flex items-center justify-center shadow-glow-cyan/20">
+          <div className="w-10 h-10 rounded-full bg-brand-cyan flex items-center justify-center">
             <User size={20} className="text-white" />
           </div>
           <div className="flex flex-col min-w-0">

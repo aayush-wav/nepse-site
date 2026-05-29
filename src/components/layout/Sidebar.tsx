@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Activity, CandlestickChart, Filter,
   Building, Briefcase, Star, BookOpen, PieChart, Landmark,
   Calculator, Bell, GraduationCap, Settings, ChevronLeft, ChevronRight, TrendingUp,
-  ArrowRightLeft, Target, Network, ShieldAlert, Map, Zap, MapPin, Award, Calendar, Clipboard
+  ArrowRightLeft, Target, Network, ShieldAlert, Map, Zap, MapPin, Award, Calendar, Clipboard, Rocket
 } from 'lucide-react';
 
 const navGroups = [
@@ -43,6 +43,7 @@ const navGroups = [
     items: [
       { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
       { path: '/watchlist', label: 'Watchlist', icon: Star },
+      { path: '/ipo-zone', label: 'IPO Zone', icon: Rocket },
       { path: '/calendar', label: 'Inv. Calendar', icon: Calendar },
       { path: '/mutual-funds', label: 'Mutual Funds', icon: Landmark },
     ],
@@ -65,29 +66,31 @@ export default function Sidebar() {
     <aside
       className={`fixed left-0 top-0 h-screen bg-bg-surface border-r border-bg-border z-40
         flex flex-col transition-transform lg:transition-all duration-300
-        ${sidebarOpen ? 'translate-x-0 w-60 shadow-2xl lg:shadow-none' : '-translate-x-full lg:translate-x-0 w-60 lg:w-[68px]'}`}
+        ${sidebarOpen ? 'translate-x-0 w-60' : '-translate-x-full lg:translate-x-0 w-60 lg:w-48'}`}
     >
 
+      {/* Brand header — always shows logo + name in both states */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-bg-border shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-cyan to-brand-violet flex items-center justify-center shadow-glow-cyan/20">
+        <div className="w-8 h-8 rounded-lg bg-brand-cyan flex items-center justify-center shrink-0">
           <TrendingUp size={18} className="text-white" />
         </div>
-        {sidebarOpen && (
-          <div className="flex flex-col">
-            <span className="font-syne font-bold text-sm text-text-primary tracking-tight">NEPSE Elite</span>
-            <span className="text-[10px] text-text-muted">Nepal Stock Analysis</span>
-          </div>
-        )}
+        <div className="flex flex-col min-w-0">
+          <span className="font-syne font-bold text-sm text-text-primary tracking-tight truncate">NEPSE Elite</span>
+          {sidebarOpen && (
+            <span className="text-[10px] text-text-muted truncate">Nepal Stock Analysis</span>
+          )}
+        </div>
       </div>
 
 
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
         {navGroups.map((group) => (
           <div key={group.label}>
-            {sidebarOpen && (
-              <div className="nav-section-label">{group.label}</div>
-            )}
-            {!sidebarOpen && <div className="h-px bg-bg-border/50 mx-2 my-2" />}
+            {/* Full sidebar: show section group label; compact: thin divider */}
+            {sidebarOpen
+              ? <div className="nav-section-label">{group.label}</div>
+              : <div className="h-px bg-bg-border/50 mx-2 my-2" />
+            }
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -96,22 +99,22 @@ export default function Sidebar() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 relative
+                      `flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 relative
                       ${isActive
                         ? 'text-brand-cyan bg-brand-cyan/[0.08] font-medium'
                         : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated/70'
                       }`
                     }
                     onClick={() => { if (window.innerWidth < 1024 && sidebarOpen) toggleSidebar(); }}
-                    title={item.label}
                   >
                     {({ isActive }) => (
                       <>
                         {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-brand-cyan shadow-glow-cyan" />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-brand-cyan" />
                         )}
-                        <Icon size={18} className="shrink-0" />
-                        {sidebarOpen && <span className="truncate">{item.label}</span>}
+                        <Icon size={16} className="shrink-0" />
+                        {/* Labels always visible in both expanded and compact modes */}
+                        <span className="truncate">{item.label}</span>
                       </>
                     )}
                   </NavLink>
@@ -127,26 +130,30 @@ export default function Sidebar() {
         <NavLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200
+            `flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-200
             ${isActive
               ? 'text-brand-cyan bg-brand-cyan/[0.08] font-medium'
               : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated/70'
             }`
           }
           onClick={() => { if (window.innerWidth < 1024 && sidebarOpen) toggleSidebar(); }}
-          title="Settings"
         >
-          <Settings size={18} className="shrink-0" />
-          {sidebarOpen && <span>Settings</span>}
+          <Settings size={16} className="shrink-0" />
+          <span>Settings</span>
         </NavLink>
       </div>
 
 
+      {/* Toggle — clearly labeled so user knows what it does */}
       <button
         onClick={toggleSidebar}
-        className="flex items-center justify-center h-10 border-t border-bg-border text-text-muted hover:text-text-primary hover:bg-bg-elevated/50 transition-all"
+        title={sidebarOpen ? 'Compact sidebar' : 'Expand sidebar'}
+        className="flex items-center justify-center gap-2 h-10 border-t border-bg-border text-text-muted hover:text-text-primary hover:bg-bg-elevated/50 transition-all text-xs font-medium"
       >
-        {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+        {sidebarOpen
+          ? <><ChevronLeft size={16} /><span>Collapse</span></>
+          : <><ChevronRight size={16} /><span className="hidden lg:inline">Expand</span></>
+        }
       </button>
     </aside>
   );

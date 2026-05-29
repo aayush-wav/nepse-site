@@ -293,3 +293,63 @@ export const useUIStore = create<UIState>()(
     { name: 'nepse-ui' }
   )
 );
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BOID Store — persisted list of saved BOIDs for bulk IPO allotment checking
+//  Max 30 entries per SEBON advisory on family-application limits.
+// ═══════════════════════════════════════════════════════════════════════════
+export interface BoidEntry {
+  id: string;       // uuid-style unique key
+  name: string;     // user-given label, e.g. "My BOID", "Dad"
+  boid: string;     // 16-digit string
+  addedAt: string;  // ISO timestamp
+}
+
+const MAX_BOIDS = 30;
+
+interface BoidState {
+  boids: BoidEntry[];
+  addBoid: (name: string, boid: string) => { ok: boolean; error?: string };
+  removeBoid: (id: string) => void;
+  updateBoid: (id: string, updates: Partial<Pick<BoidEntry, 'name' | 'boid'>>) => void;
+  clearBoids: () => void;
+}
+
+export const useBoidStore = create<BoidState>()(
+  persist(
+    (set, get) => ({
+      boids: [],
+
+      addBoid: (name, boid) => {
+        const current = get().boids;
+        if (current.length >= MAX_BOIDS) {
+          return { ok: false, error: `Maximum ${MAX_BOIDS} BOIDs allowed.` };
+        }
+        if (boid.length !== 16 || !/^\d+$/.test(boid)) {
+          return { ok: false, error: 'BOID must be exactly 16 digits.' };
+        }
+        if (current.some((b) => b.boid === boid)) {
+          return { ok: false, error: 'This BOID is already saved.' };
+        }
+        const entry: BoidEntry = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          name: name.trim() || `BOID #${current.length + 1}`,
+          boid,
+          addedAt: new Date().toISOString(),
+        };
+        set({ boids: [...current, entry] });
+        return { ok: true };
+      },
+
+      removeBoid: (id) => set((s) => ({ boids: s.boids.filter((b) => b.id !== id) })),
+
+      updateBoid: (id, updates) =>
+        set((s) => ({
+          boids: s.boids.map((b) => (b.id === id ? { ...b, ...updates } : b)),
+        })),
+
+      clearBoids: () => set({ boids: [] }),
+    }),
+    { name: 'nepse-boids' }
+  )
+);

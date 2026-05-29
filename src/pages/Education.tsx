@@ -38,6 +38,7 @@ import {
   ShieldCheck,
   Volume2,
   ArrowRight,
+  Headphones,
 } from 'lucide-react';
 import { COURSES } from '../data/educationCourses';
 
@@ -87,6 +88,7 @@ export default function Education() {
       action: 'Start watching',
       color: 'cyan',
       featured: true,
+      comingSoon: false,
       onClick: () => navigate('/education/videos'),
     },
     {
@@ -96,6 +98,7 @@ export default function Education() {
       desc: 'Quick plain-language definitions of every NEPSE term you will meet.',
       action: 'Open glossary',
       color: 'violet',
+      comingSoon: false,
       onClick: () => document.getElementById('glossary')?.scrollIntoView({ behavior: 'smooth' }),
     },
     {
@@ -105,11 +108,21 @@ export default function Education() {
       desc: 'Your personal Nepali/English tutor. Ask anything about the market, 24×7.',
       action: 'Open chat',
       color: 'green',
+      comingSoon: false,
       onClick: () => {
-        // Saarathi chat opens via a hidden trigger button planted in the layout.
         const btn = document.querySelector('[data-saarathi-trigger]') as HTMLButtonElement | null;
         btn?.click();
       },
+    },
+    {
+      icon: Headphones,
+      title: 'Podcasts',
+      titleNp: 'पोडकास्ट',
+      desc: 'Expert conversations on NEPSE investing — listen while commuting, working, or relaxing.',
+      action: 'Coming soon',
+      color: 'gold',
+      comingSoon: true,
+      onClick: () => {},
     },
   ];
 
@@ -124,14 +137,13 @@ export default function Education() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-3xl border border-brand-cyan/20 bg-gradient-to-br from-brand-cyan/10 via-brand-violet/10 to-bg-surface p-8 md:p-12"
+        className="relative overflow-hidden rounded-3xl border border-bg-border bg-bg-surface p-8 md:p-12"
       >
         {/* Background glow blobs (decoration only, not clickable) */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-brand-cyan/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-brand-violet/20 blur-3xl" />
+        
 
         <div className="relative z-10 max-w-3xl space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand-cyan/40 bg-bg-base/60 px-4 py-1.5 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand-cyan/40 bg-bg-base px-4 py-1.5">
             <Sparkles size={16} className="text-brand-cyan" />
             <span className="text-sm font-semibold tracking-wide text-brand-cyan">
               NEPSE Elite Academy
@@ -156,7 +168,7 @@ export default function Education() {
           {/* Single primary CTA — clear "what do I do next" for new visitors */}
           <button
             onClick={() => navigate('/education/videos')}
-            className="group inline-flex items-center gap-2 rounded-full bg-brand-cyan px-7 py-3.5 text-base font-bold text-bg-base shadow-glow-cyan transition-all hover:scale-[1.03] active:scale-95"
+            className="group inline-flex items-center gap-2 rounded-full bg-brand-cyan px-7 py-3.5 text-base font-bold text-bg-base transition-colors hover:bg-brand-cyan/90"
           >
             <PlayCircle size={20} /> Start Learning
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
@@ -176,6 +188,7 @@ export default function Education() {
           title="How would you like to learn?"
         />
 
+        {/* Featured video card full-width, then 3 cards in a row */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {paths.map((p, i) => {
             const Icon = p.icon;
@@ -187,20 +200,33 @@ export default function Education() {
                 initial="hidden"
                 animate="visible"
                 variants={fadeUp}
-                onClick={p.onClick}
-                className={`group flex flex-col items-start gap-4 rounded-2xl border ${c.border} bg-bg-surface p-6 text-left transition-all hover:-translate-y-1 hover:shadow-2xl active:scale-[0.99] ${
+                onClick={p.comingSoon ? undefined : p.onClick}
+                disabled={p.comingSoon}
+                className={`group flex flex-col items-start gap-4 rounded-2xl border ${c.border} bg-bg-surface p-6 text-left transition-all active:scale-[0.99] ${
                   p.featured ? 'md:col-span-3 md:flex-row md:items-center' : ''
-                }`}
+                } ${p.comingSoon ? 'opacity-75 cursor-default' : 'hover:border-brand-cyan/40'}`}
               >
-                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${c.bg} ${c.text}`}>
+                <div className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${c.bg} ${c.text}`}>
                   <Icon size={28} strokeWidth={1.8} />
+                  {p.comingSoon && (
+                    <span className="absolute -top-2 -right-2 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-brand-gold">
+                      Soon
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1 space-y-2">
                   <div>
-                    <h3 className="font-syne text-xl font-bold text-text-primary md:text-2xl">
-                      {p.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-syne text-xl font-bold text-text-primary md:text-2xl">
+                        {p.title}
+                      </h3>
+                      {p.comingSoon && (
+                        <span className="rounded-full bg-brand-gold/15 border border-brand-gold/30 px-2 py-0.5 text-xs font-semibold text-brand-gold">
+                          Coming Soon
+                        </span>
+                      )}
+                    </div>
                     <p className="font-noto-devanagari text-sm text-text-secondary">
                       {p.titleNp}
                     </p>
@@ -208,8 +234,8 @@ export default function Education() {
                   <p className="text-base text-text-secondary">{p.desc}</p>
                 </div>
 
-                <div className={`inline-flex items-center gap-1.5 text-base font-bold ${c.text} transition-transform group-hover:translate-x-1`}>
-                  {p.action} <ArrowRight size={18} />
+                <div className={`inline-flex items-center gap-1.5 text-base font-bold ${c.text} ${p.comingSoon ? '' : 'transition-transform group-hover:translate-x-1'}`}>
+                  {p.action} {!p.comingSoon && <ArrowRight size={18} />}
                 </div>
               </motion.button>
             );
@@ -274,7 +300,7 @@ export default function Education() {
       </section>
 
       {/* ═════════════ DISCLAIMER ═════════════ */}
-      <div className="rounded-xl border border-bg-border bg-bg-surface/60 p-5 text-center">
+      <div className="rounded-xl border border-bg-border bg-bg-surface p-5 text-center">
         <p className="text-sm text-text-secondary">
           <strong className="text-text-primary">शिक्षा मात्र हो, सल्लाह होइन।</strong>{' '}
           Content here is for education only — not investment advice. Always do your own

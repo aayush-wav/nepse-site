@@ -19,9 +19,9 @@
   --text-secondary: 123 141 176;
   --text-muted: 61 79 110;
   --text-inverse: 7 12 20;
-  --glow-cyan: 0 0 24px rgba(0,212,255,0.18);
-  --glow-green: 0 0 16px rgba(0,196,140,0.2);
-  --glow-red: 0 0 16px rgba(255,77,79,0.2);
+  --glow-cyan: none;
+  --glow-green: none;
+  --glow-red: none;
 }
 
 html.light {
@@ -33,7 +33,7 @@ html.light {
   --text-secondary: 71 85 105;
   --text-muted: 148 163 184;
   --text-inverse: 255 255 255;
-  --glow-cyan: 0 0 24px rgba(0,212,255,0.4);
+  --glow-cyan: none;
 }
 
 * {
@@ -108,23 +108,23 @@ h1, h2, h3, h4, h5, h6 {
 /* Card Component */
 @layer components {
   .card {
-    @apply bg-bg-surface border border-bg-border rounded-card shadow-card;
+    @apply bg-bg-surface border border-bg-border rounded-card shadow-none;
   }
   
   .card-elevated {
-    @apply bg-bg-elevated border border-bg-border rounded-card shadow-card;
+    @apply bg-bg-elevated border border-bg-border rounded-card shadow-none;
   }
   
   .btn-primary {
     @apply bg-brand-cyan text-bg-base font-semibold px-4 py-2 rounded-lg 
-           hover:scale-105 hover:shadow-glow-cyan active:scale-95
-           transition-all duration-200 ease-out;
+           hover:bg-brand-cyan/90 active:bg-brand-cyan/80
+           transition-colors duration-150 ease-out;
   }
   
   .btn-secondary {
     @apply border border-brand-cyan text-brand-cyan bg-transparent px-4 py-2 rounded-lg
-           hover:bg-brand-cyan/10 hover:shadow-glow-cyan active:scale-95
-           transition-all duration-200 ease-out;
+           hover:bg-bg-elevated active:bg-bg-border
+           transition-colors duration-150 ease-out;
   }
   
   .btn-ghost {
@@ -177,8 +177,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .skeleton {
-    @apply bg-gradient-to-r from-bg-surface via-bg-elevated to-bg-surface
-           bg-[length:200%_100%] animate-shimmer rounded;
+    @apply bg-bg-elevated rounded;
   }
   
   .nav-item {
@@ -213,7 +212,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .glow-border-cyan {
-    @apply border border-brand-cyan/30 shadow-glow-cyan;
+    @apply border border-brand-cyan/40 shadow-none;
   }
 }
 
@@ -271,14 +270,14 @@ h1, h2, h3, h4, h5, h6 {
 /* Modal Overlay */
 .modal-overlay {
   background: rgba(7, 12, 20, 0.8);
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
 }
 
-/* Glassmorphism Effect */
+/* Plain solid surface for older users */
 .glass {
-  background: rgba(13, 20, 33, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(28, 38, 64, 0.5);
+  background: rgb(var(--bg-surface));
+  backdrop-filter: none;
+  border: 1px solid rgb(var(--bg-border));
 }
 
 /* Market Status Indicators */
@@ -339,22 +338,9 @@ h1, h2, h3, h4, h5, h6 {
   height: 120px;
 }
 
-/* ═══ PREMIUM AMBIENT EFFECTS ═══ */
-
-/* Subtle animated mesh background */
+/* ═══ READABILITY-FIRST UI ═══ */
 body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(124,92,252,0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(242,201,76,0.02) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 #root {
@@ -362,13 +348,12 @@ body::before {
   z-index: 1;
 }
 
-/* Enhanced card hover */
 .card {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .card:hover {
-  border-color: rgba(28, 38, 64, 0.8);
+  border-color: rgb(var(--bg-border));
 }
 
 /* Gradient border card */
@@ -378,7 +363,7 @@ body::before {
 }
 
 .card-gradient-border::before {
-  content: '';
+  content: none;
   position: absolute;
   inset: 0;
   border-radius: 16px;
@@ -398,9 +383,8 @@ body::before {
   100% { background: linear-gradient(360deg, rgba(0,212,255,0.3), rgba(124,92,252,0.2), rgba(242,201,76,0.15)); }
 }
 
-/* Smooth page transitions */
 main {
-  animation: page-enter 0.4s ease-out;
+  animation: none;
 }
 
 @keyframes page-enter {
@@ -408,9 +392,8 @@ main {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Enhanced scrollbar */
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--bg-border), rgba(0,212,255,0.15));
+  background: rgb(var(--bg-border));
 }
 
 /* Focus ring */
@@ -442,4 +425,61 @@ main {
   letter-spacing: 0.15em;
   color: var(--text-muted);
   padding: 12px 16px 4px;
+}
+
+/* Remove glass/blur/glow utilities that appear across page-level components. */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.shadow-card,
+.shadow-2xl,
+.shadow-xl,
+.shadow-lg,
+.shadow-glow-cyan,
+.shadow-glow-green,
+.shadow-glow-red,
+.shadow-glow-violet {
+  box-shadow: none !important;
+}
+
+.drop-shadow-lg {
+  filter: none !important;
+}
+
+.blur-3xl,
+.blur-2xl,
+.blur-xl {
+  display: none !important;
+}
+
+.bg-bg-surface\/60,
+.bg-bg-surface\/70,
+.bg-bg-surface\/80,
+.bg-bg-surface\/90,
+.bg-bg-surface\/95 {
+  background-color: rgb(var(--bg-surface)) !important;
+}
+
+.bg-bg-base\/50,
+.bg-bg-base\/60,
+.bg-bg-base\/70,
+.bg-bg-base\/80 {
+  background-color: rgb(var(--bg-base)) !important;
+}
+
+.hover\:shadow-2xl:hover,
+.hover\:shadow-lg:hover,
+.hover\:shadow-glow-cyan:hover,
+.hover\:shadow-glow-green:hover,
+.hover\:shadow-glow-red:hover {
+  box-shadow: none !important;
+}
+
+/* Any legacy gradient card now renders as a plain solid card. */
+.card[class*="bg-gradient"],
+.card-elevated[class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: rgb(var(--bg-surface)) !important;
 }

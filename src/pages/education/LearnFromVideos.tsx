@@ -122,11 +122,8 @@ export default function LearnFromVideos() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07, duration: 0.45 }}
               onClick={() => navigate(`/education/videos/${course.id}`)}
-              className={`group relative w-full overflow-hidden rounded-2xl border ${c.border} bg-bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-2xl md:p-7`}
+              className={`group relative w-full overflow-hidden rounded-2xl border ${c.border} bg-bg-surface p-6 text-left transition-colors hover:border-brand-cyan/40 md:p-7`}
             >
-              {/* Decorative right-side gradient — purely visual */}
-              <div className={`pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l ${c.gradient} opacity-50`} />
-
               <div className="relative z-10 flex flex-col items-start gap-5 md:flex-row md:items-center">
                 {/* Number badge + icon (icon hidden on mobile to save space) */}
                 <div className="flex items-center gap-4">
@@ -192,7 +189,7 @@ export default function LearnFromVideos() {
       </div>
 
       {/* Footer note */}
-      <div className="rounded-xl border border-bg-border bg-bg-surface/60 p-5 text-center">
+      <div className="rounded-xl border border-bg-border bg-bg-surface p-5 text-center">
         <p className="text-sm text-text-secondary">
           More courses, instructors and Nepali subtitles are on the way.
           <br className="hidden md:block" />

@@ -46,9 +46,9 @@ function AddTransactionModal({ portfolioId, onClose }: { portfolioId: string; on
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="card w-full max-w-md shadow-2xl border border-bg-border/60">
+        className="card w-full max-w-md border border-bg-border">
         <div className="flex items-center justify-between p-5 border-b border-bg-border/50">
           <h3 className="font-syne font-bold text-lg">Add Transaction</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-bg-elevated rounded-lg text-text-muted transition-colors"><X size={18} /></button>

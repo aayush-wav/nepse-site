@@ -29,11 +29,11 @@ export default {
         'noto-devanagari': ['Noto Sans Devanagari', 'sans-serif'],
       },
       boxShadow: {
-        'glow-cyan': '0 0 24px rgba(0,212,255,0.18)',
-        'glow-green': '0 0 16px rgba(0,196,140,0.2)',
-        'glow-red': '0 0 16px rgba(255,77,79,0.2)',
-        'glow-violet': '0 0 24px rgba(124,92,252,0.18)',
-        'card': '0 4px 24px rgba(0,0,0,0.3)',
+        'glow-cyan': 'none',
+        'glow-green': 'none',
+        'glow-red': 'none',
+        'glow-violet': 'none',
+        'card': 'none',
       },
       borderRadius: {
         'card': '12px',

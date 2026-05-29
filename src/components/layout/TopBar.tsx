@@ -92,8 +92,8 @@ export default function TopBar() {
 
   return (
     <header
-      className={`fixed top-0 right-0 z-40 h-auto bg-bg-surface/95 backdrop-blur-md border-b border-bg-border
-      transition-all duration-300 ${sidebarOpen ? 'lg:left-60 left-0' : 'lg:left-[68px] left-0'}`}
+      className={`fixed top-0 right-0 z-40 h-auto bg-bg-surface border-b border-bg-border
+      transition-all duration-300 ${sidebarOpen ? 'lg:left-60 left-0' : 'lg:left-48 left-0'}`}
     >
       <div className="flex items-center gap-4 px-4 h-12 min-w-0">
         <button
@@ -180,12 +180,12 @@ export default function TopBar() {
               setAccountOpen((v) => !v);
             }}
             className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300
-              ${accountOpen ? 'ring-2 ring-brand-cyan ring-offset-2 ring-offset-bg-surface scale-110' : 'hover:scale-105'}`}
+              ${accountOpen ? 'ring-2 ring-brand-cyan ring-offset-2 ring-offset-bg-surface' : ''}`}
             title="Account menu"
             aria-label="Account"
             aria-expanded={accountOpen}
           >
-            <div className="w-full h-full rounded-full bg-gradient-to-br from-brand-cyan to-brand-violet flex items-center justify-center shadow-lg">
+            <div className="w-full h-full rounded-full bg-brand-cyan flex items-center justify-center">
               <User size={14} className="text-white" />
             </div>
           </button>

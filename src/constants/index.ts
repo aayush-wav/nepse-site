@@ -31,9 +31,30 @@ export const CGT_INDIVIDUAL_LONG = 0.05;
 export const CGT_INSTITUTION = 0.10;
 export const DIVIDEND_TAX = 0.05;
 
+// Legacy / index circuit thresholds (kept for backward compat)
 export const STOCK_CIRCUIT = 0.05;
 export const INDEX_CIRCUIT_1 = 0.03;
 export const INDEX_CIRCUIT_2 = 0.05;
+
+// ─── NEPSE Individual-Stock Circuit (verified May 2026) ───────────────────
+// Equity scrips lock when LTP moves ±10% from previous close.
+// Mutual funds & bonds use different bands; we treat all equity uniformly.
+export const NEPSE_STOCK_CIRCUIT_PCT = 10;       // ±10% daily band
+export const CIRCUIT_LOCK_TOLERANCE = 0.05;      // |change| within 0.05% of band = "locked"
+export const CIRCUIT_WATCH_MIN_SCORE = 55;       // probability score threshold for "watch" bucket
+export const CIRCUIT_DANGER_SCORE = 80;          // high-probability threshold
+
+// ─── Bulk Deal Thresholds ─────────────────────────────────────────────────
+// NEPSE has no official "bulk deal" definition like NSE/BSE. Industry-wide
+// informal practice on Nepali stock platforms uses two simultaneous tests:
+//   1. Quantity ≥ 1,000 shares in a single contract, OR
+//   2. Trade value ≥ Rs. 10 lakh (1,000,000) in a single contract
+// Either trigger flags the contract as a "bulk deal".
+export const BULK_DEAL_MIN_QUANTITY = 1000;
+export const BULK_DEAL_MIN_VALUE = 1_000_000;    // Rs. 10 lakh
+// Available threshold presets (UI lets user pick)
+export const BULK_QTY_PRESETS = [500, 1000, 5000, 10000];
+export const BULK_VALUE_PRESETS = [500_000, 1_000_000, 5_000_000, 10_000_000];
 
 export const MARKET_OPEN_HOUR = 10;
 export const MARKET_OPEN_MINUTE = 0;
