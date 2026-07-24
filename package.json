@@ -8,7 +8,8 @@
     "backend": "cd backend && python -m uvicorn main:app --port 8000 --reload",
     "dev:full": "concurrently \"npm run dev\" \"npm run backend\"",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "cd backend && pip install -r requirements.txt"
   },
   "devDependencies": {
     "@types/d3-force": "^3.0.10",
@@ -24,7 +25,6 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.100.10",
     "@tanstack/react-query-persist-client": "^5.101.0",
@@ -39,8 +39,10 @@
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.75.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.15.0",
     "recharts": "^3.8.1",
+    "remark-gfm": "^4.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"
   }

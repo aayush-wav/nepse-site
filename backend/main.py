@@ -15,6 +15,7 @@ from routes.brokers import router as brokers_router
 from routes.ipo import router as ipo_router
 from routes.sbie import router as sbie_router
 from routes.chat import router as chat_router
+from routes.ai_brief import router as ai_brief_router
 from scheduler import start_scheduler
 
 load_dotenv()
@@ -79,6 +80,7 @@ app.include_router(brokers_router)
 app.include_router(ipo_router)
 app.include_router(sbie_router)
 app.include_router(chat_router)
+app.include_router(ai_brief_router)
 
 @app.get("/health")
 def health_check():

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Loader2, Sparkles, Bot } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { chatWithSaarathi } from '../../lib/saarathi';
 
 interface Message {
@@ -16,7 +18,7 @@ export default function SaarathiChat() {
     {
       id: '1',
       role: 'assistant',
-      content: "नमस्ते! I'm Saarathi, your predictive AI guide. I can forecast the next-day closing price for NEPSE stocks using my ML models. Try asking me to **'Predict NABIL'**!"
+      content: "नमस्ते! I'm Saarathi, your predictive AI guide. I can help you with:\n- **Stock Predictions** (e.g. 'Predict NABIL')\n- **Comparisons** (e.g. 'Compare NICA vs SBI')\n- **Market Overview** (e.g. 'How is the market today?')\n- **Sectors** (e.g. 'Banking sector')\n\nWhat would you like to explore?"
     }
   ]);
   const [input, setInput] = useState('');
@@ -122,13 +124,19 @@ export default function SaarathiChat() {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div 
-                    className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed overflow-hidden ${
                       msg.role === 'user' 
                         ? 'bg-brand-cyan text-bg-base rounded-tr-sm' 
-                        : 'bg-bg-elevated border border-bg-border text-text-primary rounded-tl-sm'
+                        : 'bg-bg-elevated border border-bg-border text-text-primary rounded-tl-sm prose prose-sm prose-invert max-w-none'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'user' ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))}
@@ -145,8 +153,14 @@ export default function SaarathiChat() {
                   <button onClick={() => handleSend(undefined, "Predict NABIL")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
                     Predict NABIL
                   </button>
-                  <button onClick={() => handleSend(undefined, "Forecast NICA and SBI")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
-                    Forecast NICA & SBI
+                  <button onClick={() => handleSend(undefined, "Compare NICA vs SBI")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
+                    Compare NICA vs SBI
+                  </button>
+                  <button onClick={() => handleSend(undefined, "How's the market today?")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
+                    Market Overview
+                  </button>
+                  <button onClick={() => handleSend(undefined, "Top gainers")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
+                    Top Gainers
                   </button>
                 </div>
               )}

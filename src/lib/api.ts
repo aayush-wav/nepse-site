@@ -131,14 +131,18 @@ export const nepseApi = {
   getCoordination: () => apiFetch<any>("/api/sbie/coordination"),
   getBrokerScorecard: () => apiFetch<any[]>("/api/sbie/broker-scorecard"),
   getBrokerScorecardProfile: (id: string) => apiFetch<any>(`/api/sbie/broker-scorecard/${id}`),
-  generateAIBrief: () => apiFetch<any>("/api/sbie/ai-brief", { method: "POST" }),
+  generateAIBrief: (data: any) => apiFetch<any>("/api/sbie/generate-brief", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }),
   
-  // Chat — uses direct fetch because chat response shape differs from standard API
-  chatWithModel: async (message: string, context: string) => {
+  // Chat
+  chatWithModel: async (messages: { role: string; content: string }[], context: string) => {
     const res = await fetch(`${BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, context }),
+      body: JSON.stringify({ messages, context }),
     });
     if (!res.ok) throw new Error(`Chat API error: ${res.status}`);
     return res.json();

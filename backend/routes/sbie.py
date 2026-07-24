@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import asyncio
-import os
 import json
 from collections import defaultdict
-import google.generativeai as genai
 from cache import cache
 from nepse_client import nepse_client
 from routes.brokers import BROKER_MAP
@@ -11,11 +9,6 @@ import logging
 
 router = APIRouter(prefix="/api/sbie", tags=["sbie"])
 logger = logging.getLogger("sbie")
-
-# Attempt to configure Gemini
-api_key = os.getenv("VITE_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
 
 async def _get_base_data():
     """Helper to fetch floorsheet and live trading data."""
@@ -367,39 +360,12 @@ async def get_broker_profile(broker_id: str):
 
     return {"status": "ok", "data": profile}
 
+# NOTE: The /ai-brief endpoint has been moved to routes/ai_brief.py
+# It is now at POST /api/sbie/generate-brief and uses template-based generation
+# instead of Gemini. The old endpoint is kept as a redirect for backward compatibility.
+
 @router.post("/ai-brief")
-async def generate_ai_brief():
-    if not api_key:
-        return {"status": "error", "message": "API Key not configured."}
-        
-    try:
-        from routes.summary import get_market_summary
-        floorsheet, live_data = await _get_base_data()
-        
-        top_gainers = sorted(live_data, key=lambda x: x.get("percentageChange", 0), reverse=True)[:3]
-        gainers_str = ", ".join([f"{s['symbol']} (+{s['percentageChange']}%)" for s in top_gainers])
-        
-        prompt = f"""
-        You are an elite quantitative analyst for the NEPSE (Nepal Stock Exchange).
-        Write a very brief 3-paragraph Market Flow Brief based on today's data. 
-        Focus strictly on smart money flow, broker accumulation, and sector rotation.
-        
-        Data points:
-        Top Movers: {gainers_str}
-        Total Market Turnover: Rs. {(sum(s.get('totalTradeValue', 0) for s in live_data)/1e9):.2f} Arba.
-        
-        Structure:
-        Paragraph 1: Overall liquidity and broker dominance.
-        Paragraph 2: Sectors undergoing accumulation.
-        Paragraph 3: Key warning signs or risks to watch tomorrow.
-        
-        Be sharp, professional, and use exact numbers. Do not include markdown headers or bullet points.
-        """
-        
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
-        
-        return {"status": "ok", "text": response.text}
-    except Exception as e:
-        logger.error(f"AI Brief generation failed: {e}")
-        return {"status": "error", "message": str(e)}
+async def generate_ai_brief_legacy():
+    """Legacy endpoint — redirects to the new template-based brief generator."""
+    from routes.ai_brief import generate_brief, BriefRequest
+    return await generate_brief(BriefRequest())

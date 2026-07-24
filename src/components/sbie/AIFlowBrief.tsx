@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAIBriefContext } from '../../hooks/useSBIE';
 import { Sparkles, RefreshCw, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { nepseApi } from '../../lib/api';
 import {
   dateString,
   readBriefCache,
@@ -13,58 +13,17 @@ import {
   type AIBriefCacheEntry,
 } from '../../lib/aiBriefCache';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-
 type BriefDisplayState = ReturnType<typeof entryToDisplay>;
-
-function buildPrompt(
-  contextData: NonNullable<ReturnType<typeof useAIBriefContext>['data']>,
-  isFresh: boolean
-) {
-  const sessionLabel = isFresh
-    ? `today's trading session (${contextData.sessionDate})`
-    : `the previous trading session (${contextData.sessionDate}) — NOT today's live session`;
-
-  return `
-    You are a quantitative trading analyst specializing in the NEPSE (Nepal Stock Exchange).
-    Generate a concise, 3-paragraph "Market Flow Brief" for institutional and smart retail investors.
-
-    IMPORTANT: This analysis uses data from ${sessionLabel}.
-    ${isFresh ? 'The market data is current for today.' : "Explicitly note in paragraph 1 that this reflects the prior session because today's floorsheet is not yet available."}
-
-    DATA (${contextData.dataLabel} · ${contextData.sessionDate}):
-    - Top Smart Money Brokers Active: ${contextData.topSmartMoneyBrokers.map((b) => b.name).join(', ') || 'None'}
-    - Stocks with Stealth Accumulation: ${contextData.accumulatingStocks.join(', ') || 'None detected'}
-    - High Manipulation Risk (MRS): ${contextData.highestMRSStocks.map((s) => `${s.symbol} (${s.score})`).join(', ') || 'None detected'}
-    - Active Coordinated Clusters: ${contextData.coordinatedClusters.map((c) => c.stocks.join('+')).join(', ') || 'None'}
-    - Total Turnover (live board): Rs. ${(contextData.totalTurnover / 1e7).toFixed(2)} Cr
-
-    RULES:
-    - Paragraph 1: Overview of Smart Money activity and who is leading.
-    - Paragraph 2: Specific stocks under accumulation and coordination clusters.
-    - Paragraph 3: Risks (MRS) and final quantitative takeaway.
-    - Keep the tone professional, strictly analytical, and objective.
-    - Do not use markdown bolding/italics; return raw readable text.
-    - Do not include greetings or sign-offs.
-  `;
-}
 
 async function generateBriefText(
   contextData: NonNullable<ReturnType<typeof useAIBriefContext>['data']>,
   isFresh: boolean
 ): Promise<string> {
-  if (!genAI) {
-    throw new Error('VITE_GEMINI_API_KEY is not configured');
+  const result = await nepseApi.generateAIBrief(contextData);
+  if (result.status !== 'ok' || !result.text) {
+    throw new Error(result.message || 'Failed to generate brief from backend');
   }
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-  const result = await model.generateContent(buildPrompt(contextData, isFresh));
-  const responseText = result.response.text();
-  if (!responseText?.trim()) {
-    throw new Error('Invalid response from Gemini AI');
-  }
-  return responseText.trim();
+  return result.text.trim();
 }
 
 function applyCacheEntry(entry: AIBriefCacheEntry, today: string): BriefDisplayState {
@@ -144,11 +103,13 @@ export default function AIFlowBrief() {
               return;
             }
           }
-          if (genAI) {
+          try {
             const text = await generateBriefText(contextData, true);
             saveAndShow(text, today, true);
-          } else if (!loadFromCache()) {
-            setError('Add VITE_GEMINI_API_KEY to generate a new brief. Showing last saved brief when available.');
+          } catch (e) {
+            if (!loadFromCache()) {
+              setError('Failed to fetch new brief. Showing last saved brief when available.');
+            }
           }
           return;
         }
@@ -166,18 +127,18 @@ export default function AIFlowBrief() {
           contextData.coordinatedClusters.length > 0 ||
           contextData.totalTurnover > 0;
 
-        if (genAI && contextData.isFallback && hasSignal) {
-          const text = await generateBriefText(contextData, false);
-          saveAndShow(text, contextData.sessionDate, false);
-          return;
+        if (contextData.isFallback && hasSignal) {
+          try {
+            const text = await generateBriefText(contextData, false);
+            saveAndShow(text, contextData.sessionDate, false);
+            return;
+          } catch (e) {
+            // Fall through to cache load
+          }
         }
 
         if (!loadFromCache()) {
-          setError(
-            genAI
-              ? "Brief will appear once today's trading data is available."
-              : 'Configure VITE_GEMINI_API_KEY to generate briefs. Cached briefs will show automatically.'
-          );
+          setError("Brief will appear once today's trading data is available.");
         }
       } catch (err: unknown) {
         console.error('AI Generation Error:', err);
