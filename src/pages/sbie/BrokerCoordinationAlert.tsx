@@ -53,7 +53,13 @@ function useD3Force(initialNodes: any[], initialLinks: any[], width: number, hei
 
 export default function BrokerCoordinationAlert() {
   const { data, isLoading } = useCoordination();
-  const [subscribed, setSubscribed] = useState(false);
+  const [subscribed, setSubscribed] = useState(() => {
+    return localStorage.getItem('coordination-alerts') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('coordination-alerts', String(subscribed));
+  }, [subscribed]);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const width = 800;

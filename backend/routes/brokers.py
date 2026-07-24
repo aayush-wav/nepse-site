@@ -293,11 +293,8 @@ async def get_broker_traded_stock(
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
 
-    # Prefer per-symbol endpoint; fall back to filtering full floorsheet
-    trades = await asyncio.to_thread(nepse_client.get_company_floorsheet, sym)
-    if not trades:
-        full = await _get_floorsheet()
-        trades = [t for t in full if (t.get("stockSymbol") or "").upper() == sym]
+    full = await _get_floorsheet()
+    trades = [t for t in full if (t.get("stockSymbol") or "").upper() == sym]
 
     buyers: Dict[str, dict] = {}
     sellers: Dict[str, dict] = {}
@@ -498,10 +495,8 @@ async def get_broker_holdings(
     if cached:
         return {"status": "ok", "source": "cache", "data": cached}
 
-    trades = await asyncio.to_thread(nepse_client.get_company_floorsheet, sym)
-    if not trades:
-        full = await _get_floorsheet()
-        trades = [t for t in full if (t.get("stockSymbol") or "").upper() == sym]
+    full = await _get_floorsheet()
+    trades = [t for t in full if (t.get("stockSymbol") or "").upper() == sym]
 
     by_broker: Dict[str, dict] = {}
     total_volume = 0

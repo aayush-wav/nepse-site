@@ -16,7 +16,7 @@ export default function SaarathiChat() {
     {
       id: '1',
       role: 'assistant',
-      content: "नमस्ते! I'm Saarathi, your NEPSE guide. How can I help you analyze the market today?"
+      content: "नमस्ते! I'm Saarathi, your predictive AI guide. I can forecast the next-day closing price for NEPSE stocks using my ML models. Try asking me to **'Predict NABIL'**!"
     }
   ]);
   const [input, setInput] = useState('');
@@ -32,11 +32,11 @@ export default function SaarathiChat() {
     scrollToBottom();
   }, [messages, isOpen]);
 
-  const handleSend = async (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent, directMessage?: string) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    const userMessage = (directMessage || input).trim();
+    if (!userMessage || isLoading) return;
 
-    const userMessage = input.trim();
     setInput('');
     
     const newMessages = [
@@ -47,7 +47,6 @@ export default function SaarathiChat() {
     setIsLoading(true);
 
     try {
-      // Map to Anthropic format
       const apiMessages = newMessages.map(m => ({
         role: m.role,
         content: m.content
@@ -141,6 +140,16 @@ export default function SaarathiChat() {
                   </div>
                 </div>
               )}
+              {messages.length === 1 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button onClick={() => handleSend(undefined, "Predict NABIL")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
+                    Predict NABIL
+                  </button>
+                  <button onClick={() => handleSend(undefined, "Forecast NICA and SBI")} className="text-xs bg-bg-elevated border border-bg-border hover:border-brand-cyan px-3 py-1.5 rounded-full text-text-primary transition-colors">
+                    Forecast NICA & SBI
+                  </button>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -159,7 +168,7 @@ export default function SaarathiChat() {
                       handleSend();
                     }
                   }}
-                  placeholder="Ask Saarathi..."
+                  placeholder="E.g., Predict NABIL..."
                   className="flex-1 max-h-32 min-h-[40px] bg-transparent border-none focus:ring-0 resize-none text-sm p-2 scrollbar-thin"
                   rows={1}
                 />

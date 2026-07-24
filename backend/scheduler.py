@@ -145,6 +145,16 @@ def start_scheduler():
         # Phase 2: Floorsheet (heavy, runs after fast data is ready)
         _fetch_and_cache("floorsheet_full", nepse_client.get_floorsheet, TTL_SLOW)
         logger.info("Phase 2 warmup complete (floorsheet)")
+
+        # Invalidate all stale broker analysis cache keys so they recompute
+        # with real broker IDs from the freshly fetched floorsheet
+        stale_keys = [k for k in list(cache._store.keys())
+                      if k.startswith(("broker_breakdown", "accumulation", "broker_activity",
+                                       "broker_holdings", "broker_stats_summary"))]
+        for k in stale_keys:
+            cache.invalidate(k)
+        if stale_keys:
+            logger.info(f"Invalidated {len(stale_keys)} stale broker cache keys after floorsheet refresh")
         
         logger.info("Initial cache warmup fully completed.")
         

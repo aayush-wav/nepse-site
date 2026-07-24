@@ -283,7 +283,15 @@ export default function BrokerIntelligenceMap() {
               </tr>
             ))}
             {sortedData.length === 0 && (
-              <tr><td colSpan={13} className="p-8 text-center text-text-muted">No broker data available. Market may not have opened yet.</td></tr>
+              <tr>
+                <td colSpan={13} className="p-16 text-center text-text-muted">
+                  <div className="flex flex-col items-center justify-center">
+                    <Users size={48} className="mb-4 opacity-20" />
+                    <h3 className="text-lg font-bold mb-2">No Broker Data Available</h3>
+                    <p className="text-sm">The market may not have opened yet, or there are no significant broker movements today.</p>
+                  </div>
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

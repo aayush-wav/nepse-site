@@ -1,8 +1,10 @@
 import { useAccumulation } from '../../hooks/useSBIE';
 import { resolveBrokerName } from '../../lib/sbie-algorithms';
 import { motion } from 'framer-motion';
-import { Target, Info, Star, Shield, TrendingUp } from 'lucide-react';
+import { Target, Info, Star, Shield, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useWatchlistStore } from '../../store';
+import toast from 'react-hot-toast';
 
 function FallbackBanner({ label }: { label: string }) {
   return (
@@ -72,6 +74,24 @@ function MiniSparkline({ volume, prices }: { volume: number[]; prices: number[] 
 export default function StealthAccumulationDetector() {
   const { data, isLoading } = useAccumulation();
   const navigate = useNavigate();
+  const { activeWatchlistId, addToWatchlist, watchlists } = useWatchlistStore();
+
+  const handleAddToWatchlist = (e: React.MouseEvent, symbol: string, price: number) => {
+    e.stopPropagation();
+    if (!activeWatchlistId) {
+      toast.error('No active watchlist selected');
+      return;
+    }
+    const list = watchlists.find(w => w.id === activeWatchlistId);
+    if (list?.items.some(i => i.symbol === symbol)) {
+      toast.error(`${symbol} is already in ${list.name}`);
+      return;
+    }
+    addToWatchlist(activeWatchlistId, symbol, price);
+    toast.success(`${symbol} added to ${list?.name || 'watchlist'}`, {
+      icon: <CheckCircle2 className="text-bull-green" size={20} />
+    });
+  };
 
   if (isLoading) {
     return (
@@ -162,7 +182,7 @@ export default function StealthAccumulationDetector() {
             </div>
 
             <button
-              onClick={(e) => { e.stopPropagation(); alert(`${stock.symbol} added to watchlist`); }}
+              onClick={(e) => handleAddToWatchlist(e, stock.symbol, stock.lastPrice)}
               className="w-full btn-secondary py-2 text-xs flex items-center justify-center gap-2 group-hover:bg-brand-cyan/10 group-hover:text-brand-cyan group-hover:border-brand-cyan/30"
             >
               <Star size={14} /> Add to Watchlist

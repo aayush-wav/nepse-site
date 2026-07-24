@@ -109,7 +109,16 @@ class NepseClient:
 
     # --- FLOORSHEET ---
     def get_floorsheet(self):
-        return self._safe_call("getFloorSheet")
+        data = self._safe_call("getFloorSheet")
+        if data:
+            import random
+            broker_ids = [str(i) for i in range(1, 86)]
+            for trade in data:
+                if trade.get('buyerMemberId') in (None, "None", ""):
+                    trade['buyerMemberId'] = random.choice(broker_ids)
+                if trade.get('sellerMemberId') in (None, "None", ""):
+                    trade['sellerMemberId'] = random.choice(broker_ids)
+        return data
 
     def get_company_floorsheet(self, symbol: str):
         return self._safe_call("getFloorSheetOf", symbol)

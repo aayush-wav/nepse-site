@@ -9,8 +9,8 @@ export function getMarketStatus(): 'OPEN' | 'PRE_OPEN' | 'CLOSED' {
   const minute = nepal.getMinutes();
   const timeMinutes = hour * 60 + minute;
 
-  // NEPSE trading days: Mon (1) to Fri (5)
-  const tradingDays = [1, 2, 3, 4, 5]; 
+  // NEPSE trading days: Sun (0) to Thu (4)
+  const tradingDays = [0, 1, 2, 3, 4]; 
   if (!tradingDays.includes(day)) return 'CLOSED';
 
   // Pre-Open: 10:30 AM (630) to 11:00 AM (660)
@@ -56,9 +56,9 @@ export function timeToMarketEvent(): { label: string; seconds: number; nextEvent
     // Now calculate effective target day
     let targetDay = (day + daysToAdd) % 7;
     
-    // Skip weekends (Sat=6, Sun=0)
-    if (targetDay === 6) daysToAdd += 2; // Jump to Monday
-    else if (targetDay === 0) daysToAdd += 1; // Jump to Monday
+    // Skip weekends (Fri=5, Sat=6)
+    if (targetDay === 5) daysToAdd += 2; // Jump to Sunday
+    else if (targetDay === 6) daysToAdd += 1; // Jump to Sunday
 
     if (daysToAdd > 0) {
       // Recalculate openSeconds properly by adding full days

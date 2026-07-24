@@ -8,6 +8,10 @@ export default function CompareStocks() {
   const { data: allStocks, isLoading } = useScreener({});
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') setSearchTerm('');
+  };
 
   const availableStocks = (allStocks || []).filter(s => 
     !selectedSymbols.includes(s.symbol) && 
@@ -49,9 +53,10 @@ export default function CompareStocks() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder={selectedSymbols.length >= 4 ? "Max 4 stocks allowed" : "Search symbol to compare..."}
+              placeholder={selectedSymbols.length >= 4 ? "Max 4 stocks allowed" : "Search symbol to compare (Press Esc to clear)..."}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
               disabled={selectedSymbols.length >= 4}
               className="input-field w-full pl-9 py-2"
             />
@@ -178,8 +183,37 @@ export default function CompareStocks() {
                 {selectedData.map(s => (
                   <td key={s.symbol} className="p-4">
                     <div className="w-16 h-1.5 bg-bg-border rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-violet" style={{ width: `${Math.min(100, Math.max(0, s.momentumScore))}%` }} />
+                      <div className="h-full bg-brand-violet" style={{ width: `${Math.min(100, Math.max(0, s.momentumScore || 0))}%` }} />
                     </div>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Technicals */}
+              <tr className="bg-bg-elevated/30">
+                <td colSpan={5} className="p-2 px-4 text-xs font-bold uppercase tracking-wider text-text-primary">Technicals</td>
+              </tr>
+              <tr>
+                <td className="p-4 text-text-secondary">RSI (14)</td>
+                {selectedData.map(s => (
+                  <td key={s.symbol} className="p-4 font-jetbrains font-medium">
+                    {s.rsi ? (
+                      <span className={s.rsi > 70 ? 'text-bear-red' : s.rsi < 30 ? 'text-bull-green' : 'text-text-primary'}>
+                        {s.rsi.toFixed(2)}
+                      </span>
+                    ) : 'N/A'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="p-4 text-text-secondary">MACD Signal</td>
+                {selectedData.map(s => (
+                  <td key={s.symbol} className="p-4 font-jetbrains font-medium uppercase text-[10px]">
+                    {s.macdSignal ? (
+                      <span className={s.macdSignal === 'bullish' ? 'text-bull-green' : s.macdSignal === 'bearish' ? 'text-bear-red' : 'text-text-secondary'}>
+                        {s.macdSignal}
+                      </span>
+                    ) : 'N/A'}
                   </td>
                 ))}
               </tr>

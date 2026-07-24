@@ -48,11 +48,11 @@ export default function ManipulationRiskScanner() {
 
   const stocks = useMemo(() => {
     if (!data?.data) return [];
-    const list = [...data.data];
+    const list = data.data.filter((s: any) => s.score > 30);
     switch (sortBy) {
-      case 'totalVolume': list.sort((a, b) => b.totalVolume - a.totalVolume); break;
-      case 'symbol': list.sort((a, b) => a.symbol.localeCompare(b.symbol)); break;
-      default: list.sort((a, b) => b.score - a.score);
+      case 'totalVolume': list.sort((a: any, b: any) => b.totalVolume - a.totalVolume); break;
+      case 'symbol': list.sort((a: any, b: any) => a.symbol.localeCompare(b.symbol)); break;
+      default: list.sort((a: any, b: any) => b.score - a.score);
     }
     return list;
   }, [data, sortBy]);

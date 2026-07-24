@@ -2,15 +2,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { nepseApi } from "@/lib/api";
 import { useMemo } from "react";
 
-function useIsMarketOpen(): boolean {
-  const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const npt = new Date(utcMs + 5.75 * 3600000);
-  const day = npt.getDay();
-  if (day === 5 || day === 6) return false;
-  const mins = npt.getHours() * 60 + npt.getMinutes();
-  return mins >= 595 && mins < 910; // 9:55 AM to 3:10 PM NPT (slight buffer)
-}
+import { isNepalMarketOpen as useIsMarketOpen } from "@/utils/marketHours";
 
 const FAST = 10 * 1000;        // 10s — live market data
 const MEDIUM = 30 * 1000;      // 30s

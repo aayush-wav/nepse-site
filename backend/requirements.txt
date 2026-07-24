@@ -8,3 +8,8 @@ pydantic
 beautifulsoup4>=4.14.0
 lxml>=5.0.0
 google-generativeai>=0.8.0
+tensorflow>=2.15.0
+scikit-learn>=1.3.0
+pandas>=2.1.0
+numpy>=1.26.0
+joblib>=1.3.0

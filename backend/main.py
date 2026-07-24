@@ -14,6 +14,7 @@ from routes.news import router as news_router
 from routes.brokers import router as brokers_router
 from routes.ipo import router as ipo_router
 from routes.sbie import router as sbie_router
+from routes.chat import router as chat_router
 from scheduler import start_scheduler
 
 load_dotenv()
@@ -32,6 +33,12 @@ async def lifespan(app: FastAPI):
     # STARTUP
     global scheduler
     logger.info("Starting NEPSE Elite Backend...")
+    
+    # Pre-load ML predictor
+    from predictor import get_predictor
+    logger.info("Loading ML Predictor models...")
+    get_predictor()
+    
     scheduler = start_scheduler()
     logger.info("Backend ready. Cache warming complete.")
     yield
@@ -71,6 +78,7 @@ app.include_router(news_router, prefix="/api/news", tags=["news"])
 app.include_router(brokers_router)
 app.include_router(ipo_router)
 app.include_router(sbie_router)
+app.include_router(chat_router)
 
 @app.get("/health")
 def health_check():

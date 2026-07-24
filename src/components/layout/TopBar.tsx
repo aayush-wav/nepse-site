@@ -16,6 +16,7 @@ export default function TopBar() {
   const alerts = useAlertStore((s) => s.alerts);
 
   const [countdown, setCountdown] = useState(timeToMarketEvent());
+  const [nowNPT, setNowNPT] = useState(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000 + 5.75 * 3600000));
   const [apiOnline, setApiOnline] = useState(true);
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -29,6 +30,7 @@ export default function TopBar() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCountdown(timeToMarketEvent());
+      setNowNPT(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000 + 5.75 * 3600000));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -120,6 +122,9 @@ export default function TopBar() {
             <div className={`w-2 h-2 rounded-full ${statusColor} ${statusPulse}`} />
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               Market {marketStatus}
+            </span>
+            <span className="text-[10px] font-jetbrains text-text-primary px-2 border-l border-bg-border/50">
+              {nowNPT.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} NPT
             </span>
             {countdown.seconds > 0 && (
               <span className="text-[10px] font-jetbrains text-text-secondary">
