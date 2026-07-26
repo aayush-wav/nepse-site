@@ -1,0 +1,11 @@
+timestamp,model,task,metric,value
+2026-07-15 00:02:23,Hybrid,regression,rmse,896.364707
+2026-07-15 00:02:23,Hybrid,regression,mae,862.879089
+2026-07-15 00:02:23,Hybrid,regression,mape,43.023838
+2026-07-15 00:02:23,Hybrid,regression,r2,-85.101341
+2026-07-15 00:02:23,Hybrid,regression,directional_accuracy,49.342105
+2026-07-15 00:02:23,Hybrid,classification,accuracy,0.477124
+2026-07-15 00:02:23,Hybrid,classification,precision,0.404255
+2026-07-15 00:02:23,Hybrid,classification,recall,0.612903
+2026-07-15 00:02:23,Hybrid,classification,f1,0.487179
+2026-07-15 00:02:23,Hybrid,classification,auc_roc,0.456044
