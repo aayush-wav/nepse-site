@@ -1,0 +1,11 @@
+timestamp,model,task,metric,value
+2026-07-15 00:00:31,LSTM,regression,rmse,546.676693
+2026-07-15 00:00:31,LSTM,regression,mae,512.473267
+2026-07-15 00:00:31,LSTM,regression,mape,25.423378
+2026-07-15 00:00:31,LSTM,regression,r2,-31.025913
+2026-07-15 00:00:31,LSTM,regression,directional_accuracy,42.763158
+2026-07-15 00:00:31,LSTM,classification,accuracy,0.594771
+2026-07-15 00:00:31,LSTM,classification,precision,0.000000
+2026-07-15 00:00:31,LSTM,classification,recall,0.000000
+2026-07-15 00:00:31,LSTM,classification,f1,0.000000
+2026-07-15 00:00:31,LSTM,classification,auc_roc,0.426799
