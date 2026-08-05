@@ -49,7 +49,7 @@ A comprehensive analysis platform for the Nepal Stock Exchange (NEPSE), built wi
 
 ### Running the Application
 
-You can run both the frontend and backend concurrently from the root directory:
+You can run both the frontend & backend concurrently from the root directory:
 
 ```bash
 npm run dev:full
